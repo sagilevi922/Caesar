@@ -23,8 +23,6 @@ char decrepted_char(char curr_char, int decr_key)
 	}
 	else if (curr_char >= '0' && curr_char <= '9')
 	{
-		new_char = '0' + (num_expression - '0') % 10;
-
 		num_expression = (num_expression - '0');
 		if (num_expression < 0)
 			num_expression = cyclic(num_expression, 10);
@@ -65,13 +63,14 @@ int cyclic(int to_round, int top)
 
 int main(int argc, char* argv[])
 {
-	if (argc != 3)
+	if (argc != 4)
 	{
-		printf("Invalid input, Please provide encrypted file path and the key"); //Not enough arguments.
+		printf("Invalid input, Please provide encrypted file path and the key and number of threads"); //Not enough arguments.
 		return 1; 
 		
 	}
 	FILE* encypted_file = fopen(argv[1], "r");
+
 	FILE* decrypted_file = fopen("decrypted.txt", "w");
 	if (NULL == encypted_file || NULL == decrypted_file)
 	{
