@@ -15,6 +15,28 @@ char decrepted_char(char curr_char, int decr_key)
 	return new_char;
 }
 
+int excute(FILE* input_f, FILE* output_f, int key)
+{
+	char tav;
+	while (!feof(input_f))
+	{
+		tav = fgetc(input_f);
+
+		if (feof(input_f))
+		{
+			break;
+		}
+
+		printf("before decryption %c\n", tav);
+
+		tav = decrepted_char(tav, key);
+
+		printf("after decryption %c\n\n", tav);
+
+		fputc(tav, output_f);
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	if (argc != 3)
@@ -40,7 +62,7 @@ int main(int argc, char* argv[])
 	printf("File path is: %s\n", argv[1]);
 	printf("first arg is: %s\n", argv[0]);
 
-
+	excute(encypted_file, decrypted_file, key);
 
 	fclose(encypted_file);
 	fclose(decrypted_file);
