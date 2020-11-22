@@ -25,4 +25,7 @@ char decrepted_char(char curr_char, int decr_key);
 int cyclic(int to_round, int top);
 DWORD WINAPI decrypt_file(LPVOID lpParam);
 
+
+char* txt_file_to_str(HANDLE hFile, int start_pos, int input_size);
+HANDLE create_file_for_read(char* input_file_name);
 //#endif // __IO_THREAD_H__

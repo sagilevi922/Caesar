@@ -20,7 +20,77 @@ static const char P_EXIT_CMD[] = "exit";
 // Function Definitions --------------------------------------------------------
 
 
+HANDLE create_file_for_read(char* input_file_name)
+{
+	HANDLE hFile;
+	hFile = CreateFileA(input_file_name,               // file to open
+		GENERIC_READ,          // open for reading
+		FILE_SHARE_READ,       // share for reading
+		NULL,                  // default security
+		OPEN_ALWAYS,         // existing file only
+		FILE_ATTRIBUTE_NORMAL, // normal file
+		NULL);                 // no attr. template
 
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		printf(("Terminal failure: unable to open file \"%s\" for read.\n"), input_file_name);
+		return NULL;
+	}
+	return hFile;
+}
+
+HANDLE create_file_for_write()
+{
+	DWORD file_ptr;
+	HANDLE hFile;
+	hFile = CreateFileA(OUTPUT_FILE_NAME,               // file to open
+		GENERIC_WRITE,          // open for reading
+		FILE_SHARE_WRITE,       // share for reading
+		NULL,                  // default security
+		OPEN_ALWAYS,         // existing file only
+		FILE_ATTRIBUTE_NORMAL, // normal file
+		NULL);                 // no attr. template
+
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		printf(("Terminal failure: unable to open file \"%s\" for write.\n"), OUTPUT_FILE_NAME);
+		return NULL;
+	}
+
+	return hFile;
+}
+
+char* txt_file_to_str(HANDLE hFile,int start_pos, int input_size)
+{
+	DWORD  dwBytesRead = 0;
+	char* input_txt = (char*)malloc((input_size + 1) * sizeof(char));
+
+	if (NULL == input_txt)
+	{
+		printf("Failed to allocate memory. exit\n");
+		// TODO free exit properly
+	}
+
+	if (FALSE == ReadFile(hFile, input_txt, input_size, &dwBytesRead, NULL))
+	{
+		printf("Terminal failure: Unable to read from file.\n GetLastError=%08x\n", GetLastError());
+		CloseHandle(hFile);
+		return;
+	}
+
+	if (dwBytesRead > 0 && dwBytesRead <= input_size)
+	{
+		input_txt[dwBytesRead] = '\0'; // NULL character
+		printf("succsfull read %d bytes: \n", dwBytesRead);
+		printf("\ninput txt:\n%s\n\n", input_txt);
+	}
+	else if (dwBytesRead == 0)
+	{
+		printf("No data read from file\n");
+	}
+
+	return input_txt;
+}
 
 // Gets a char: 'curr_char' and a key: 'decr_key' and returns deycrpited char if the char is letter or digit
 char decrepted_char(char curr_char, int decr_key)
@@ -62,10 +132,39 @@ int cyclic(int to_round, int top)
 	return top + to_round;
 }
 
+void decrypt_and_write(char* enc_str, int key, int enc_str_size, HANDLE oFile, int start_pos)
+{
+	for (int i = 0; i < enc_str_size; i++)
+	{
+		enc_str[i] = decrepted_char(enc_str[i], key);
+	}
+
+	DWORD  dwBytesWritten = 0;
+	DWORD  file_ptr;
+
+	file_ptr = SetFilePointer(
+		oFile,
+		start_pos, //number of chars
+		NULL, //no need of 32 high bits
+		FILE_BEGIN //starting point- begin of file
+	);
+	if (FALSE == WriteFile(oFile, enc_str, enc_str_size, &dwBytesWritten, NULL))
+	{
+		printf("Terminal failure: Unable to read from file.\n GetLastError=%08x\n", GetLastError());
+		CloseHandle(oFile);
+		return;
+	}
+
+}
 
 
 DWORD WINAPI decrypt_file(LPVOID lpParam)
 {
+	HANDLE hFile;
+	HANDLE oFile;
+	DWORD file_ptr;
+	printf("\n\ncreated thread\n\n");
+
 	thread_args* temp_arg = (thread_args*)lpParam;
 	printf("key: %d\n", temp_arg->key);
 	printf("start_pos: %d\n", temp_arg->start_pos);
@@ -73,6 +172,30 @@ DWORD WINAPI decrypt_file(LPVOID lpParam)
 	printf("output_file: %s\n", temp_arg->output_file);
 	printf("input_file: %s\n", temp_arg->input_file);
 
+	hFile = create_file_for_read(temp_arg->input_file);
 
+	file_ptr = SetFilePointer(
+		hFile,
+		temp_arg->start_pos, //number of chars
+		NULL, //no need of 32 high bits
+		FILE_BEGIN //starting point- begin of file
+	);
+
+	if (file_ptr == INVALID_SET_FILE_POINTER) // Test for failure
+	{
+		printf("Can't set file pointer of outputfile. exit\n");
+		//need to close hfile!!
+		exit(1);
+	}
+	char* input_txt = NULL;
+	int input_size = temp_arg->end_pos - temp_arg->start_pos;
+	input_txt = txt_file_to_str(hFile, temp_arg->start_pos, input_size);
+	printf("lines to decrypt:\n%s", input_txt);
+
+
+	oFile = create_file_for_write();
+	decrypt_and_write(input_txt, temp_arg->key, input_size, oFile, temp_arg->start_pos);
+
+	//TODO FREE MEM AND CLOSE HANDE
 	return 0;
 }
