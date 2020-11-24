@@ -1,5 +1,12 @@
-// IO_Thread.c
-
+// translation.c
+/*
+Authors – Matan Achiel - 205642119, Sagi Levi - 205663545
+Project – Ex2 - translation.
+Description – This program is open by threads from the main program - main.c
+gets an struct pointer to an arguments from the main
+program and then encrypt/dycrypt depends on a global variable - action_mode
+a specific part of the input text file and writes it to an output textfile.
+*/
 // Includes --------------------------------------------------------------------
 
 #include <limits.h>
@@ -7,7 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <windows.h>
-#include "decryption.h"
+#include "translation.h"
 
 // Constants -------------------------------------------------------------------
 
@@ -17,8 +24,7 @@
 
 // Function Definitions --------------------------------------------------------
 
-//gets a string of the input file name, creates a file with thid name,
-//and then return a handle to this file
+
 HANDLE get_input_file_handle(char* input_file_name)
 {
 	if(strstr(input_file_name, ".txt")==NULL)
@@ -80,7 +86,7 @@ HANDLE create_file_for_write()
 
 	return hFile;
 }
-//gets a HANDLE and close it properly, return 1 in case of sucssful closing, else return errorcode
+
 int close_handles_proper(HANDLE file_handle)
 {
 	//arguments check - exrported function
@@ -98,6 +104,7 @@ int close_handles_proper(HANDLE file_handle)
 	return 1;
 
 }
+
 char* txt_file_to_str(HANDLE hFile,int start_pos, int input_size)
 {
 	char* input_txt = NULL;
@@ -145,9 +152,6 @@ char* txt_file_to_str(HANDLE hFile,int start_pos, int input_size)
 	return input_txt;
 }
 
-
-// Gets a char: 'curr_char' and a key: 'decr_key' and returns deycrpited/encryped char if the char is letter or digit
-// and according to global variable 'action_mode'
 char translate_char(char curr_char, int decr_key)
 {
 	char new_char = 'a';
@@ -187,7 +191,6 @@ char translate_char(char curr_char, int decr_key)
 	return new_char;
 }
 
-// Gets a number to round: 'to_round' and a max range val: 'top' and returns a moudlu number
 int cyclic(int to_round, int top)
 {
 	return top + to_round;
@@ -221,7 +224,6 @@ void decrypt_and_write(char* enc_str, int key, int enc_str_size, HANDLE oFile, i
 
 
 }
-
 
 DWORD WINAPI translate_file(LPVOID lpParam)
 {

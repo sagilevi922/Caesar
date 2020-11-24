@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <windows.h>
-#include "decryption.h"
+#include "translation.h"
 #include "HardCodedData.h"
 #include <stdbool.h>
 

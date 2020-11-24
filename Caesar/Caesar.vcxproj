@@ -139,12 +139,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="decryption.c" />
+    <ClCompile Include="translation.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="test_main.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="decryption.h" />
+    <ClInclude Include="translation.h" />
     <ClInclude Include="HardCodedData.h" />
     <ClInclude Include="test_main.h" />
   </ItemGroup>
