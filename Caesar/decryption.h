@@ -1,15 +1,12 @@
 // decryption.h
 
 //#ifndef __IO_THREAD_H__
-#define __IO_THREAD_H__
-#define OUTPUT_FILE_NAME_DEC "decrypted.txt"
-#define OUTPUT_FILE_NAME_ENC "encryped.txt"
-#define OUTPUT_FILE_NAME_SIZE 13
-#define ERROR_CODE ((int)(-1))
+
 
 // Includes --------------------------------------------------------------------
 
 #include <windows.h>
+#include "HardCodedData.h"
 
 // Function Declarations -------------------------------------------------------
 
@@ -26,6 +23,7 @@ typedef struct thread_arguments {
 char translate_char(char curr_char, int decr_key);
 int cyclic(int to_round, int top);
 DWORD WINAPI translate_file(LPVOID lpParam);
+int close_handles_proper(HANDLE file_handle);
 
 
 char* txt_file_to_str(HANDLE hFile, int start_pos, int input_size);

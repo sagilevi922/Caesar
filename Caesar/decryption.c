@@ -11,17 +11,21 @@
 
 // Constants -------------------------------------------------------------------
 
-#define MAX_STRING 50
-static const char P_EXIT_CMD[] = "exit";
 
 // Function Declarations -------------------------------------------------------
 
 
 // Function Definitions --------------------------------------------------------
 
-
+//gets a string of the input file name, creates a file with thid name,
+//and then return a handle to this file
 HANDLE get_input_file_handle(char* input_file_name)
 {
+	if(strstr(input_file_name, ".txt")==NULL)
+	{
+		//printf("Invalid input file name");
+		return NULL;
+	}
 	HANDLE hFile;
 	hFile = CreateFileA(input_file_name,               // file to open
 		GENERIC_READ,          // open for reading
@@ -76,11 +80,42 @@ HANDLE create_file_for_write()
 
 	return hFile;
 }
+//gets a HANDLE and close it properly, return 1 in case of sucssful closing, else return errorcode
+int close_handles_proper(HANDLE file_handle)
+{
+	//arguments check - exrported function
+	if (file_handle == INVALID_HANDLE_VALUE)
+	{
+		printf("Invalid HANDLE value, can't close this HANDLE.\n");
+	}
+	int ret_val = 0;
+	ret_val = CloseHandle(file_handle);
+	if (false == ret_val)
+	{
+		printf("Error when closing\n");
+		return ERROR_CODE;
+	}
+	return 1;
 
+}
 char* txt_file_to_str(HANDLE hFile,int start_pos, int input_size)
 {
+	char* input_txt = NULL;
+	//arguments check - exrported function
+	if (hFile == INVALID_HANDLE_VALUE)
+	{
+		printf("Terminal failure: unable to open file for read.\n");
+		return NULL;
+	}
+	if (start_pos < 0 || input_size < 0)
+	{
+		printf("invalid starting position for current thread");
+
+		close_handles_proper(hFile);
+		return NULL;
+	}
 	DWORD  dwBytesRead = 0;
-	char* input_txt = (char*)malloc((input_size+1) * sizeof(char));
+	input_txt = (char*)malloc((input_size+1) * sizeof(char));
 
 	if (NULL == input_txt)
 	{
@@ -91,8 +126,9 @@ char* txt_file_to_str(HANDLE hFile,int start_pos, int input_size)
 	if (FALSE == ReadFile(hFile, input_txt, input_size, &dwBytesRead, NULL))
 	{
 		printf("Terminal failure: Unable to read from file.\n GetLastError=%08x\n", GetLastError());
-		CloseHandle(hFile);
-		return;
+		close_handles_proper(hFile);
+		free(input_txt);
+		return NULL;
 	}
 
 	if (dwBytesRead > 0 && dwBytesRead <= input_size)
@@ -176,8 +212,8 @@ void decrypt_and_write(char* enc_str, int key, int enc_str_size, HANDLE oFile, i
 
 	if (FALSE == WriteFile(oFile, enc_str, enc_str_size, &dwBytesWritten, NULL))
 	{
-		printf("Terminal failure: Unable to read from file.\n GetLastError=%08x\n", GetLastError());
-		CloseHandle(oFile);
+		printf("Terminal failure: Unable to write to file.\n GetLastError=%08x\n", GetLastError());
+		close_handles_proper(oFile);
 		return;
 	}
 	printf("\noutput:\n%s\n\n", enc_str);
@@ -192,22 +228,30 @@ DWORD WINAPI translate_file(LPVOID lpParam)
 	HANDLE hFile;
 	HANDLE oFile;
 	DWORD file_ptr;
-	printf("\n\ncreated thread\n\n");
 	extern char action_mode;
-	printf("%c action", action_mode);
 	thread_args* temp_arg = (thread_args*)lpParam;
+	char* input_txt = NULL;
+
+
+	printf("\n\ncreated thread\n\n");
+	printf("%c action", action_mode);
 	printf("key: %d\n", temp_arg->key);
 	printf("start_pos: %d\n", temp_arg->start_pos);
 	printf("end_pos: %d\n", temp_arg->end_pos);
 	printf("output_file: %s\n", temp_arg->output_file);
 	printf("input_file: %s\n", temp_arg->input_file);
+
 	if (temp_arg->start_pos == temp_arg->end_pos)
 	{
 		return 0;
 	}
 
 	hFile = get_input_file_handle(temp_arg->input_file);
-
+	if (hFile == NULL)
+	{
+		printf("Program failed to proccess input file name. exit program");
+		return 1;//no any initialized handles yet
+	}
 	file_ptr = SetFilePointer(
 		hFile,
 		temp_arg->start_pos, //number of chars
@@ -218,34 +262,24 @@ DWORD WINAPI translate_file(LPVOID lpParam)
 	if (file_ptr == INVALID_SET_FILE_POINTER) // Test for failure
 	{
 		printf("Can't set file pointer of outputfile. exit\n");
-		//need to close hfile!!
-		exit(1);
+		if (close_handles_proper(hFile) != 1)
+			return 1;
 	}
-	char* input_txt = NULL;
+
 	int input_size = temp_arg->end_pos - temp_arg->start_pos;
 	input_txt = txt_file_to_str(hFile, temp_arg->start_pos, input_size);
-	//printf("lines to decrypt:\n%s", input_txt);
-
-
-	oFile = create_file_for_write();
-	decrypt_and_write(input_txt, temp_arg->key, input_size, oFile, temp_arg->start_pos);
 	
-	free(input_txt);
-
-	int ret_val = 0;
-	ret_val = CloseHandle(oFile);
-	if (false == ret_val)
+	if (input_txt != NULL)
 	{
-		printf("Error when closing\n");
-		return ERROR_CODE;
+		oFile = create_file_for_write();
+		decrypt_and_write(input_txt, temp_arg->key, input_size, oFile, temp_arg->start_pos);
+		free(input_txt);
+		if (close_handles_proper(oFile) != 1)
+			return 1;
 	}
 
-	ret_val = CloseHandle(hFile);
-	if (false == ret_val)
-	{
-		printf("Error when closing\n");
-		return ERROR_CODE;
-	}
-	
+	if (close_handles_proper(hFile)!= 1)
+		return 1;
+
 	return 0;
 }
