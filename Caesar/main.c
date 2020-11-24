@@ -20,7 +20,9 @@ char action_mode = 'd';
 
 
 
-//IO
+//IO module?
+//Gets a str of the input text file content: input_f_str, and the size of the content: file_size.
+//returned value: the number of lines in the file.
 int get_num_of_lines(char* input_f_str, int file_size)
 {
 	int num_of_lines = 0;
@@ -126,7 +128,10 @@ void init_start_points(int* lines_per_thread, char* input_f_str, int file_size, 
 	}
 }
 
-
+//Gets the entrance function of the new thread: p_start_routine, it's id: p_thread_id,
+//and as struct that contain its arguments: paths of input and output files, a key for operation,
+//starting position of operation and the length of the section to operate.
+//It creates a new thread and return a HANDLE to it.
 static HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
 	LPDWORD p_thread_id, thread_args* args)
 {
@@ -163,7 +168,7 @@ static HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
 	return thread_handle;
 }
 
-// gets paremters for thread and create a thread argument struct pointer, 
+// gets paremters for thread and create a thread argument struct pointer
 thread_args* create_thread_arg(int key, int start_pos, int end_pos, char* input_file_name)
 {
 	thread_args* temp_arg = (thread_args*)malloc(sizeof(thread_args));
@@ -188,7 +193,9 @@ thread_args* create_thread_arg(int key, int start_pos, int end_pos, char* input_
 	return temp_arg;
 }
 
-
+//creates a output file according to the arguments: size: file_size, and number of lines: num_of_lines
+//and according to the right mode: encryption or decryption.
+//the function returns 0 for success or 1 else.
 int init_output_file(int file_size, int num_of_lines)
 {
 	HANDLE hfile;
