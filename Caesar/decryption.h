@@ -4,6 +4,7 @@
 #define __IO_THREAD_H__
 #define OUTPUT_FILE_NAME "decrypted.txt"
 #define OUTPUT_FILE_NAME_SIZE 13
+#define ERROR_CODE ((int)(-1))
 
 // Includes --------------------------------------------------------------------
 
@@ -27,5 +28,5 @@ DWORD WINAPI decrypt_file(LPVOID lpParam);
 
 
 char* txt_file_to_str(HANDLE hFile, int start_pos, int input_size);
-HANDLE create_file_for_read(char* input_file_name);
+HANDLE get_input_file_handle(char* input_file_name);
 //#endif // __IO_THREAD_H__

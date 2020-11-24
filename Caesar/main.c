@@ -5,7 +5,6 @@
 
 #define THREADS_LIMIT 64
 #define BRUTAL_TERMINATION_CODE 0x55
-#define ERROR_CODE ((int)(-1))
 #define MAX_WAITING_TIME 10000
 
 //
@@ -17,27 +16,6 @@
 //	int key;
 //} thread_args;
 
-int excute(FILE* input_f, FILE* output_f, int key)
-{
-	char tav;
-	while (!feof(input_f))
-	{
-		tav = fgetc(input_f);
-
-		if (feof(input_f))
-		{
-			break;
-		}
-
-		printf("before decryption %c\n", tav);
-
-		tav = decrepted_char(tav, key);
-
-		printf("after decryption %c\n\n", tav);
-
-		fputc(tav, output_f);
-	}
-}
 
 
 //IO
@@ -139,7 +117,7 @@ void init_start_points(int* lines_per_thread, char* input_f_str, int file_size, 
 
 		num_of_lines_to_seek = lines_per_thread[i];
 		num_of_lines = 0;
-		lines_per_thread[i] = pos;
+		lines_per_thread[i] = pos-1;
 	}
 	for (i = 0; i < num_of_threads; i++)
 	{
@@ -147,96 +125,6 @@ void init_start_points(int* lines_per_thread, char* input_f_str, int file_size, 
 
 	}
 }
-
-//before winapi
-//void init_start_points(int* lines_per_thread, FILE* input_f, int num_of_threads)
-//{
-//	fseek(input_f, 0, SEEK_SET);
-//	int pos = 0;
-//	int num_of_lines = 0;
-//	char tav;
-//	int i = 0;
-//	int num_of_lines_to_seek = lines_per_thread[0];
-//	lines_per_thread[0] = 0;
-//	while (!feof(input_f))
-//	{
-//
-//		while (num_of_lines < num_of_lines_to_seek && !feof(input_f))
-//		{
-//			tav = fgetc(input_f);
-//			pos++;
-//
-//			if (tav == '\n')
-//				num_of_lines++;
-//		}
-//		i++;
-//		if (i == num_of_threads)
-//			break;
-//		num_of_lines_to_seek = lines_per_thread[i];
-//		lines_per_thread[i] = pos;
-//	}
-//
-//
-//	for (i = 0; i < 2; i++)
-//	{
-//		printf("lines_per_thread[%d] : %d\n", i, lines_per_thread[i]);
-//
-//	}
-//}
-
-
-//HANDLE create_file_for_read(char* input_file_name)
-//{
-//	HANDLE hFile;
-//	hFile = CreateFileA(input_file_name,               // file to open
-//		GENERIC_READ,          // open for reading
-//		FILE_SHARE_READ,       // share for reading
-//		NULL,                  // default security
-//		OPEN_ALWAYS,         // existing file only
-//		FILE_ATTRIBUTE_NORMAL, // normal file
-//		NULL);                 // no attr. template
-//
-//	if (hFile == INVALID_HANDLE_VALUE)
-//	{
-//		printf(("Terminal failure: unable to open file \"%s\" for read.\n"), input_file_name);
-//		return NULL;
-//	}
-//	return hFile;
-//}
-
-//char* txt_file_to_str(HANDLE hFile, int file_size)
-//{
-//	DWORD  dwBytesRead = 0;
-//
-//	char* input_txt = (char*)malloc((file_size + 1) * sizeof(char));
-//
-//	if (NULL == input_txt) 
-//	{
-//		printf("Failed to allocate memory. exit\n");
-//		// TODO free exit properly
-//	}
-//
-//	if (FALSE == ReadFile(hFile, input_txt, file_size, &dwBytesRead, NULL))
-//	{
-//		printf("Terminal failure: Unable to read from file.\n GetLastError=%08x\n", GetLastError());
-//		CloseHandle(hFile);
-//		return;
-//	}
-//
-//	if (dwBytesRead > 0 && dwBytesRead <= file_size)
-//	{
-//		input_txt[dwBytesRead] = '\0'; // NULL character
-//		printf("succsfull read %d bytes: \n", dwBytesRead);
-//		printf("%s\n", input_txt);
-//	}
-//	else if (dwBytesRead == 0)
-//	{
-//		printf("No data read from file\n");
-//	}
-//
-//	return input_txt;
-//}
-
 
 
 static HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
@@ -287,7 +175,7 @@ thread_args* create_thread_arg(int key, int start_pos, int end_pos, char* input_
 		exit(1);
 	}
 	temp_arg->key = key;
-	temp_arg->start_pos = 0;
+	temp_arg->start_pos = start_pos;
 	temp_arg->end_pos = end_pos;
 	strcpy(temp_arg->output_file, OUTPUT_FILE_NAME);
 	temp_arg->input_file = input_file_name;
@@ -365,6 +253,57 @@ void init_output_file(int file_size, int num_of_lines)
 	}
 }
 
+// free dynamic allocation gets array of all the threads args and its length, and free each one and then free the array itself, 
+// also frees the array the keeps each thread start pos, and frees the input file name string.
+void free_memory(char* input_file_name, int* lines_per_thread, thread_args** thread_args_arr,int num_of_threads)
+{
+	for (int i = 0; i < num_of_threads; i++)
+	{
+		free(thread_args_arr[i]);
+	}
+	free(thread_args_arr);
+	free(input_file_name);
+	free(lines_per_thread);
+
+}
+
+// gets array of all the threads handles and their amount, and closes the handle for each thread 
+void close_threads(HANDLE p_thread_handles[], int num_of_threads, DWORD wait_code)
+{
+	int ret_val = 0;
+	// Checking wait code
+
+	if (WAIT_OBJECT_0 != wait_code)
+	{
+		printf("Error when waiting");
+		return ERROR_CODE;
+	}
+	// Terminate still running Thread
+
+	for (int i = 0; i < num_of_threads; i++)
+	{
+		// TODO correct terminate argument
+		ret_val = TerminateThread(p_thread_handles[i], BRUTAL_TERMINATION_CODE);
+		if (false == ret_val)
+		{
+			printf("Error when terminating\n");
+			return ERROR_CODE;
+		}
+	}
+	// Close thread handles
+	for (int i = 0; i < num_of_threads; i++)
+	{
+		ret_val = CloseHandle(p_thread_handles[i]);
+		if (false == ret_val)
+		{
+			printf("Error when closing\n");
+			return ERROR_CODE;
+		}
+	}
+}
+
+// gets number of thread and a pointer to array of thread args, and allocats dynamic memory for it. 
+
 thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr)
 {
 	thread_args_arr = (thread_args**)malloc(num_of_threads * sizeof(thread_args*));
@@ -379,20 +318,47 @@ thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr
 	return thread_args_arr;
 }
 
+int excute(FILE* input_f, FILE* output_f, int key)
+{
+	char tav;
+	while (!feof(input_f))
+	{
+		tav = fgetc(input_f);
+
+		if (feof(input_f))
+		{
+			break;
+		}
+
+		printf("before decryption %c\n", tav);
+
+		tav = decrepted_char(tav, key);
+
+		printf("after decryption %c\n\n", tav);
+
+		fputc(tav, output_f);
+	}
+}
 
 int main(int argc, char* argv[])
 {
 	if (argc != 4)
 	{
 		printf("Invalid input, Please provide encrypted file path and the key and number of threads"); //Not enough arguments.
-		return 1; 
-		
+		return 1;
 	}
 
 	int key = *argv[2] - '0';
 	int num_of_threads = *argv[3] - '0';
 	int input_file_len = strlen(argv[1]);
 	char* input_file_name = (char*)malloc((input_file_len + 1) * sizeof(char));
+	if (NULL == input_file_name)
+	{
+		printf("memory allocation failed for input_file_name");
+
+		//TODO CHECK RIGHT EXIT MEHOD IN CASE OF FAIL ALLOCATION
+		exit(1);
+	}
 	input_file_name[input_file_len] = '\0';
 	strcpy(input_file_name, argv[1]);
 
@@ -408,12 +374,12 @@ int main(int argc, char* argv[])
 	HANDLE hFile;
 	DWORD dwFileSize;
 
-	hFile = create_file_for_read(argv[1]);
+	hFile = get_input_file_handle(argv[1]);
 	dwFileSize = GetFileSize(hFile, NULL);
 
 	printf("num of bytes: %d\n", dwFileSize);
 
-	input_txt = txt_file_to_str(hFile,0, dwFileSize);
+	input_txt = txt_file_to_str(hFile, 0, dwFileSize);
 
 	int num_of_lines = get_num_of_lines(input_txt, dwFileSize);
 
@@ -422,26 +388,35 @@ int main(int argc, char* argv[])
 	lines_per_thread = init_lines_per_thread(num_of_threads, num_of_lines);
 	init_start_points(lines_per_thread, input_txt, dwFileSize, num_of_threads);
 
+	free(input_txt);
 	int ret_val = CloseHandle(hFile);
-	if (!ret_val) {
+	if (!ret_val) {	
 		printf("Can't close INPUT file\n");
 		exit(1);
 	}
+
 	thread_args** thread_args_arr = NULL;
 	thread_args_arr = init_thread_args(num_of_threads, thread_args_arr);
 	int start_pos = 0, end_pos = 0;
 	for (int i = 0; i < num_of_threads; i++)
 	{
-
-		start_pos = lines_per_thread[i];
-		if (i!= num_of_threads)
-			end_pos = lines_per_thread[i+1]-1;
+		if (i >= num_of_lines)
+		{
+			start_pos = 0;
+			end_pos = 0;
+		}
 		else
-			end_pos = dwFileSize-1;
+		{
+			start_pos = lines_per_thread[i];
 
+			if (i != num_of_lines - 1)
+				end_pos = lines_per_thread[i + 1];
+			else
+				end_pos = dwFileSize;
+		}
 		thread_args_arr[i] = create_thread_arg(key, start_pos, end_pos, input_file_name);
 	}
-	
+
 	DWORD wait_code;
 	HANDLE p_thread_handles[THREADS_LIMIT];
 	DWORD p_thread_ids[THREADS_LIMIT];
@@ -455,39 +430,15 @@ int main(int argc, char* argv[])
 		p_thread_handles[i] = CreateThreadSimple(decrypt_file, p_thread_ids[i], thread_args_arr[i]);
 	}
 
-	//wait_code = WaitForMultipleObjects(num_of_threads, p_thread_handles,TRUE, MAX_WAITING_TIME);
-
-	//wait_code = WaitForMultipleObjects(num_of_threads, p_thread_handles, TRUE, MAX_WAITING_TIME);
-
-	//if (WAIT_OBJECT_0 != wait_code)
-	//{
-	//	printf("Error when waiting");
-	//	return ERROR_CODE;
-	//}
-
-	//ret_val = TerminateThread(p_thread_handles[1], BRUTAL_TERMINATION_CODE);
-	//if (false == ret_val)
-	//{
-	//	printf("Error when terminating\n");
-	//	return ERROR_CODE;
-	//}
-
-	//// Close thread handles
-	//for (i = 0; i < NUM_THREADS; i++)
-	//{
-	//	ret_val = CloseHandle(p_thread_handles[i]);
-	//	if (false == ret_val)
-	//	{
-	//		printf("Error when closing\n");
-	//		return ERROR_CODE;
-	//	}
-	//}
-
-	////excute(encypted_file, decrypted_file, key);
+	wait_code = WaitForMultipleObjects(num_of_threads, p_thread_handles, TRUE, MAX_WAITING_TIME);
 
 
-	//fclose(encypted_file);
-	//fclose(decrypted_file);
+
+
+	// gets array of all the threads handles and their amount, and closes the handle for each thread 
+	close_threads(p_thread_handles, num_of_threads, wait_code);
+
+	free_memory(input_file_name, lines_per_thread, thread_args_arr, num_of_threads, p_thread_handles, p_thread_ids);
 
 	return 0;
 }
