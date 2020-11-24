@@ -43,17 +43,34 @@ HANDLE create_file_for_write()
 {
 	DWORD file_ptr;
 	HANDLE hFile;
-	hFile = CreateFileA(OUTPUT_FILE_NAME,               // file to open
-		GENERIC_WRITE,          // open for reading
-		FILE_SHARE_WRITE,       // share for reading
-		NULL,                  // default security
-		OPEN_ALWAYS,         // existing file only
-		FILE_ATTRIBUTE_NORMAL, // normal file
-		NULL);                 // no attr. template
+	extern char action_mode;
+	if (action_mode == 'd')
+	{
+		hFile = CreateFileA(OUTPUT_FILE_NAME_DEC,               // file to open
+			GENERIC_WRITE,          // open for reading
+			FILE_SHARE_WRITE,       // share for reading
+			NULL,                  // default security
+			OPEN_ALWAYS,         // existing file only
+			FILE_ATTRIBUTE_NORMAL, // normal file
+			NULL);                 // no attr. template
+
+	}
+	else
+	{
+		hFile = CreateFileA(OUTPUT_FILE_NAME_ENC,               // file to open
+			GENERIC_WRITE,          // open for reading
+			FILE_SHARE_WRITE,       // share for reading
+			NULL,                  // default security
+			OPEN_ALWAYS,         // existing file only
+			FILE_ATTRIBUTE_NORMAL, // normal file
+			NULL);                 // no attr. template
+
+	}
+
 
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
-		printf(("Terminal failure: unable to open file \"%s\" for write.\n"), OUTPUT_FILE_NAME);
+		printf(("Terminal failure: unable to open the output file for write.\n"));
 		return NULL;
 	}
 
@@ -92,11 +109,19 @@ char* txt_file_to_str(HANDLE hFile,int start_pos, int input_size)
 	return input_txt;
 }
 
-// Gets a char: 'curr_char' and a key: 'decr_key' and returns deycrpited char if the char is letter or digit
-char decrepted_char(char curr_char, int decr_key)
+
+// Gets a char: 'curr_char' and a key: 'decr_key' and returns deycrpited/encryped char if the char is letter or digit
+// and according to global variable 'action_mode'
+char translate_char(char curr_char, int decr_key)
 {
 	char new_char = 'a';
-	int num_expression = curr_char - decr_key;
+	int num_expression;
+	extern char action_mode;
+	if (action_mode == 'd')
+		num_expression = curr_char - decr_key;
+
+	else
+		num_expression = curr_char + decr_key;
 
 	if (curr_char >= 'a' && curr_char <= 'z')
 	{
@@ -136,7 +161,7 @@ void decrypt_and_write(char* enc_str, int key, int enc_str_size, HANDLE oFile, i
 {
 	for (int i = 0; i < enc_str_size; i++)
 	{
-		enc_str[i] = decrepted_char(enc_str[i], key);
+		enc_str[i] = translate_char(enc_str[i], key);
 	}
 	DWORD  dwBytesWritten = 0;
 	DWORD  file_ptr;
@@ -162,13 +187,14 @@ void decrypt_and_write(char* enc_str, int key, int enc_str_size, HANDLE oFile, i
 }
 
 
-DWORD WINAPI decrypt_file(LPVOID lpParam)
+DWORD WINAPI translate_file(LPVOID lpParam)
 {
 	HANDLE hFile;
 	HANDLE oFile;
 	DWORD file_ptr;
 	printf("\n\ncreated thread\n\n");
-
+	extern char action_mode;
+	printf("%c action", action_mode);
 	thread_args* temp_arg = (thread_args*)lpParam;
 	printf("key: %d\n", temp_arg->key);
 	printf("start_pos: %d\n", temp_arg->start_pos);

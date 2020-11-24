@@ -17,6 +17,10 @@
 //} thread_args;
 
 
+// global variable for the thread to know wheater to encrypt or decrypt
+char action_mode = 'd';
+
+
 
 //IO
 int get_num_of_lines(char* input_f_str, int file_size)
@@ -177,7 +181,11 @@ thread_args* create_thread_arg(int key, int start_pos, int end_pos, char* input_
 	temp_arg->key = key;
 	temp_arg->start_pos = start_pos;
 	temp_arg->end_pos = end_pos;
-	strcpy(temp_arg->output_file, OUTPUT_FILE_NAME);
+	if (action_mode =='d')
+		strcpy(temp_arg->output_file, OUTPUT_FILE_NAME_DEC);
+	else
+		strcpy(temp_arg->output_file, OUTPUT_FILE_NAME_ENC);
+
 	temp_arg->input_file = input_file_name;
 	
 	return temp_arg;
@@ -209,15 +217,32 @@ void init_output_file(int file_size, int num_of_lines)
 	HANDLE hfile;
 	DWORD end_file_ptr;
 
-	hfile = CreateFileA(
-		OUTPUT_FILE_NAME,
-		GENERIC_WRITE, //Open file with write mode
-		FILE_SHARE_WRITE, //the file should be shared by the threads.
-		NULL, //default security mode
-		CREATE_ALWAYS, //first time we open the file.
-		FILE_ATTRIBUTE_NORMAL, //normal attribute
-		NULL //not relevant for open file operations.
-	);
+	if (action_mode == 'd')
+	{
+		hfile = CreateFileA(
+			OUTPUT_FILE_NAME_DEC,
+			GENERIC_WRITE, //Open file with write mode
+			FILE_SHARE_WRITE, //the file should be shared by the threads.
+			NULL, //default security mode
+			CREATE_ALWAYS, //first time we open the file.
+			FILE_ATTRIBUTE_NORMAL, //normal attribute
+			NULL //not relevant for open file operations.
+		);
+	}
+	else
+	{
+		hfile = CreateFileA(
+			OUTPUT_FILE_NAME_ENC,
+			GENERIC_WRITE, //Open file with write mode
+			FILE_SHARE_WRITE, //the file should be shared by the threads.
+			NULL, //default security mode
+			CREATE_ALWAYS, //first time we open the file.
+			FILE_ATTRIBUTE_NORMAL, //normal attribute
+			NULL //not relevant for open file operations.
+		);
+	}
+
+
 
 	if (hfile == INVALID_HANDLE_VALUE)
 	{
@@ -318,31 +343,32 @@ thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr
 	return thread_args_arr;
 }
 
-int excute(FILE* input_f, FILE* output_f, int key)
-{
-	char tav;
-	while (!feof(input_f))
-	{
-		tav = fgetc(input_f);
-
-		if (feof(input_f))
-		{
-			break;
-		}
-
-		printf("before decryption %c\n", tav);
-
-		tav = decrepted_char(tav, key);
-
-		printf("after decryption %c\n\n", tav);
-
-		fputc(tav, output_f);
-	}
-}
+//int excute(FILE* input_f, FILE* output_f, int key)
+//{
+//	char tav;
+//	while (!feof(input_f))
+//	{
+//		tav = fgetc(input_f);
+//
+//		if (feof(input_f))
+//		{
+//			break;
+//		}
+//
+//		printf("before decryption %c\n", tav);
+//
+//		tav = decrepted_char(tav, key);
+//
+//		printf("after decryption %c\n\n", tav);
+//
+//		fputc(tav, output_f);
+//	}
+//}
 
 int main(int argc, char* argv[])
 {
-	if (argc != 4)
+
+	if (argc != 5)
 	{
 		printf("Invalid input, Please provide encrypted file path and the key and number of threads"); //Not enough arguments.
 		return 1;
@@ -350,6 +376,16 @@ int main(int argc, char* argv[])
 
 	int key = *argv[2] - '0';
 	int num_of_threads = *argv[3] - '0';
+
+	char* action_input = argv[4];
+	printf("action_input: %c\n", action_input[1]);
+	if(strcmp(action_input, "-d") != 0  && strcmp(action_input, "-e") != 0)
+	{
+		printf("Invalid last argument, for encryption type '-e' for decryption type '-d'"); //Not enough arguments.
+		return 1;
+	} 
+	action_mode = action_input[1];
+
 	int input_file_len = strlen(argv[1]);
 	char* input_file_name = (char*)malloc((input_file_len + 1) * sizeof(char));
 	if (NULL == input_file_name)
@@ -427,7 +463,7 @@ int main(int argc, char* argv[])
 
 	for (int i = 0; i < num_of_threads; i++)
 	{
-		p_thread_handles[i] = CreateThreadSimple(decrypt_file, p_thread_ids[i], thread_args_arr[i]);
+		p_thread_handles[i] = CreateThreadSimple(translate_file, p_thread_ids[i], thread_args_arr[i]);
 	}
 
 	wait_code = WaitForMultipleObjects(num_of_threads, p_thread_handles, TRUE, MAX_WAITING_TIME);
