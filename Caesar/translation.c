@@ -107,7 +107,7 @@ int close_handles_proper(HANDLE file_handle)
 
 char* txt_file_to_str(HANDLE hFile,int start_pos, int input_size)
 {
-	char* input_txt = NULL;
+	
 	//arguments check - exrported function
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
@@ -122,12 +122,13 @@ char* txt_file_to_str(HANDLE hFile,int start_pos, int input_size)
 		return NULL;
 	}
 	DWORD  dwBytesRead = 0;
-	input_txt = (char*)malloc((input_size+1) * sizeof(char));
 
+	char* input_txt = NULL;
+	input_txt = (char*)malloc((input_size+1) * sizeof(char));
 	if (NULL == input_txt)
 	{
 		printf("Failed to allocate memory. exit\n");
-		// TODO free exit properly
+		return NULL;
 	}
 
 	if (FALSE == ReadFile(hFile, input_txt, input_size, &dwBytesRead, NULL))
