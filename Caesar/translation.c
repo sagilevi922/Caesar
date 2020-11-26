@@ -46,37 +46,57 @@ HANDLE get_input_file_handle(char* input_file_name)
 		printf(("Terminal failure: unable to open file \"%s\" for read.\n"), input_file_name);
 		return NULL;
 	}
+	if (GetLastError() == ERROR_FILE_NOT_FOUND)
+	{
+		printf("Invalid input file name. no such file existing. Finish program");
+		return NULL;
+	}
 	return hFile;
 }
-
-HANDLE create_file_for_write()
+//Gets the full path of the input file: input_path, and it's length: input_file_len
+//defines the output file name and path to create, and returns it
+char* init_output_file_name(char* input_path, int input_file_len)
+{
+	char* output_file_name = NULL;
+	int i = 0, last_backslash_pos = 0;
+	
+	while (input_path[i] != '\0')
+	{
+		if (input_path[i] == '\\')
+			last_backslash_pos = i;
+		i++;
+	}
+	output_file_name = (char*)malloc((last_backslash_pos+2+OUTPUT_FILE_NAME_SIZE) * sizeof(char));
+	if (NULL == output_file_name)
+	{
+		printf("Failed to allocate memory.\n");
+		return NULL;
+	}
+	for (i = 0; i < last_backslash_pos; i++)
+	{
+		*(output_file_name + i) = input_path[i];
+	}
+	*(output_file_name + i) = '\0';
+	extern char action_mode;
+	if (action_mode == 'd')
+		strcat(output_file_name, OUTPUT_FILE_NAME_DEC);
+	else
+		strcat(output_file_name, OUTPUT_FILE_NAME_ENC);
+	printf("output_file_name is: %s", output_file_name);
+	return output_file_name;
+}
+HANDLE create_file_for_write(char* output_file_name)
 {
 	DWORD file_ptr;
 	HANDLE hFile;
 	extern char action_mode;
-	if (action_mode == 'd')
-	{
-		hFile = CreateFileA(OUTPUT_FILE_NAME_DEC,               // file to open
-			GENERIC_WRITE,          // open for reading
-			FILE_SHARE_WRITE,       // share for reading
-			NULL,                  // default security
-			OPEN_ALWAYS,         // existing file only
-			FILE_ATTRIBUTE_NORMAL, // normal file
-			NULL);                 // no attr. template
-
-	}
-	else
-	{
-		hFile = CreateFileA(OUTPUT_FILE_NAME_ENC,               // file to open
-			GENERIC_WRITE,          // open for reading
-			FILE_SHARE_WRITE,       // share for reading
-			NULL,                  // default security
-			OPEN_ALWAYS,         // existing file only
-			FILE_ATTRIBUTE_NORMAL, // normal file
-			NULL);                 // no attr. template
-
-	}
-
+	hFile = CreateFileA(output_file_name,               // file to open
+		GENERIC_WRITE,          // open for reading
+		FILE_SHARE_WRITE,       // share for reading
+		NULL,                  // default security
+		OPEN_ALWAYS,         // existing file only
+		FILE_ATTRIBUTE_NORMAL, // normal file
+		NULL);                 // no attr. template
 
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
@@ -111,7 +131,6 @@ char* txt_file_to_str(HANDLE hFile,int start_pos, int input_size)
 	//arguments check - exrported function
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
-		printf("Terminal failure: unable to open file for read.\n");
 		return NULL;
 	}
 	if (start_pos < 0 || input_size < 0)
@@ -127,7 +146,7 @@ char* txt_file_to_str(HANDLE hFile,int start_pos, int input_size)
 	input_txt = (char*)malloc((input_size+1) * sizeof(char));
 	if (NULL == input_txt)
 	{
-		printf("Failed to allocate memory. exit\n");
+		printf("Failed to allocate memory.\n");
 		return NULL;
 	}
 
@@ -234,6 +253,7 @@ DWORD WINAPI translate_file(LPVOID lpParam)
 	extern char action_mode;
 	thread_args* temp_arg = (thread_args*)lpParam;
 	char* input_txt = NULL;
+	char* output_file_path = NULL;
 
 
 	printf("\n\ncreated thread\n\n");
@@ -271,10 +291,10 @@ DWORD WINAPI translate_file(LPVOID lpParam)
 
 	int input_size = temp_arg->end_pos - temp_arg->start_pos;
 	input_txt = txt_file_to_str(hFile, temp_arg->start_pos, input_size);
-	
+	output_file_path = temp_arg->output_file;
 	if (input_txt != NULL)
 	{
-		oFile = create_file_for_write();
+		oFile = create_file_for_write(output_file_path);
 		decrypt_and_write(input_txt, temp_arg->key, input_size, oFile, temp_arg->start_pos);
 		free(input_txt);
 		if (close_handles_proper(oFile) != 1)

@@ -13,7 +13,8 @@
 // container of arguments for the thread
 typedef struct thread_arguments {
 	char* input_file;
-	char output_file[OUTPUT_FILE_NAME_SIZE];
+	//char output_file[OUTPUT_FILE_NAME_SIZE];
+	char* output_file;
 	int start_pos;
 	int end_pos;
 	int key;
@@ -36,12 +37,16 @@ int close_handles_proper(HANDLE file_handle);
 // and copy it to a dynamic string.
 char* txt_file_to_str(HANDLE hFile, int start_pos, int input_size);
 
-// gets a string of the input file name, creates a file with thid name,
+// gets a string of the input file name, open a file with this name if exist,
 // and then return a handle to this file
 HANDLE get_input_file_handle(char* input_file_name);
 
+//Gets the full path of the input file: input_path, and it's length: input_file_len
+//defines the output file name and path to create, and returns it
+char* init_output_file_name(char* input_path, int input_file_len);
+
 // create and returns handle for the output text file.
-HANDLE create_file_for_write();
+HANDLE create_file_for_write(char* output_file_name);
 
 // The start function of the translation thread.
 // gets a pointer to struct 'thread_arguments' which contains an input fille name to

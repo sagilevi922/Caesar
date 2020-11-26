@@ -169,25 +169,20 @@ static HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
 }
 
 // gets paremters for thread and create a thread argument struct pointer
-thread_args* create_thread_arg(int key, int start_pos, int end_pos, char* input_file_name)
+thread_args* create_thread_arg(int key, int start_pos, int end_pos, char* input_file_name, char* output_file_name)
 {
 	thread_args* temp_arg = (thread_args*)malloc(sizeof(thread_args));
 	if (NULL == temp_arg)
 	{
 		printf("memory allocation failed");
-
-		//TODO CHECK RIGHT EXIT MEHOD IN CASE OF FAIL ALLOCATION
-
 		return NULL;
 	}
 	temp_arg->key = key;
 	temp_arg->start_pos = start_pos;
 	temp_arg->end_pos = end_pos;
-	if (action_mode =='d')
-		strcpy(temp_arg->output_file, OUTPUT_FILE_NAME_DEC);
-	else
-		strcpy(temp_arg->output_file, OUTPUT_FILE_NAME_ENC);
-
+	temp_arg->output_file = output_file_name;
+	//strcpy(temp_arg->output_file, output_file_name);
+	//strcpy(temp_arg->output_file, OUTPUT_FILE_NAME_ENC);
 	temp_arg->input_file = input_file_name;
 	
 	return temp_arg;
@@ -196,35 +191,21 @@ thread_args* create_thread_arg(int key, int start_pos, int end_pos, char* input_
 //creates a output file according to the arguments: size: file_size, and number of lines: num_of_lines
 //and according to the right mode: encryption or decryption.
 //the function returns 0 for success or 1 else.
-int init_output_file(int file_size, int num_of_lines)
+int init_output_file(int file_size, int num_of_lines, char* output_file_name)
 {
 	HANDLE hfile;
 	DWORD end_file_ptr;
 
-	if (action_mode == 'd')
-	{
-		hfile = CreateFileA(
-			OUTPUT_FILE_NAME_DEC,
-			GENERIC_WRITE, //Open file with write mode
-			FILE_SHARE_WRITE, //the file should be shared by the threads.
-			NULL, //default security mode
-			CREATE_ALWAYS, //first time we open the file.
-			FILE_ATTRIBUTE_NORMAL, //normal attribute
-			NULL //not relevant for open file operations.
+	hfile = CreateFileA(
+		output_file_name,
+		GENERIC_WRITE, //Open file with write mode
+		FILE_SHARE_WRITE, //the file should be shared by the threads.
+		NULL, //default security mode
+		CREATE_ALWAYS, //first time we open the file.
+		FILE_ATTRIBUTE_NORMAL, //normal attribute
+		NULL //not relevant for open file operations.
 		);
-	}
-	else
-	{
-		hfile = CreateFileA(
-			OUTPUT_FILE_NAME_ENC,
-			GENERIC_WRITE, //Open file with write mode
-			FILE_SHARE_WRITE, //the file should be shared by the threads.
-			NULL, //default security mode
-			CREATE_ALWAYS, //first time we open the file.
-			FILE_ATTRIBUTE_NORMAL, //normal attribute
-			NULL //not relevant for open file operations.
-		);
-	}
+	
 
 	if (hfile == INVALID_HANDLE_VALUE)
 	{
@@ -260,7 +241,7 @@ int init_output_file(int file_size, int num_of_lines)
 // free dynamic allocation gets array of all the threads args and its length, and free each one and then free the array itself, 
 // also frees the array the keeps each thread start pos.
 // frees only in case the ptr is not NULL
-void free_memory(char* input_file_name, int* lines_per_thread, thread_args** thread_args_arr, int num_of_threads)
+void free_memory(char* input_file_name, int* lines_per_thread, thread_args** thread_args_arr, int num_of_threads, char* output_file_name)
 {
 	for (int i = 0; i < num_of_threads; i++)
 	{
@@ -271,9 +252,11 @@ void free_memory(char* input_file_name, int* lines_per_thread, thread_args** thr
 	if (thread_args_arr)
 		free(thread_args_arr);
 
-
 	if (lines_per_thread)
 		free(lines_per_thread);
+
+	if (output_file_name)
+		free(output_file_name);
 }
 
 // gets array of all the threads handles and their amount, and closes the handle for each thread 
@@ -308,7 +291,7 @@ void close_threads(HANDLE p_thread_handles[], int num_of_threads, DWORD wait_cod
 }
 
 // gets number of thread and a pointer to array of thread args, and allocats dynamic memory for it. 
-thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr,int num_of_lines,int key,DWORD dwFileSize,char* input_file_name, int* lines_per_thread)
+thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr,int num_of_lines,int key,DWORD dwFileSize, char* input_file_name, int* lines_per_thread, char* output_file_name)
 {
 	thread_args_arr = (thread_args**)malloc(num_of_threads * sizeof(thread_args*));
 
@@ -336,7 +319,7 @@ thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr
 			else
 				end_pos = dwFileSize;
 		}
-		thread_args_arr[i] = create_thread_arg(key, start_pos, end_pos, input_file_name);
+		thread_args_arr[i] = create_thread_arg(key, start_pos, end_pos, input_file_name, output_file_name);
 		if (NULL == thread_args_arr[i])
 		{
 			for (int j = 0; j < i; j++)
@@ -388,6 +371,7 @@ int main(int argc, char* argv[])
 	char* input_txt = NULL;
 	char* action_input ="";
 	char* input_file_name = NULL;
+	char* output_file_name = NULL;
 	int* lines_per_thread = NULL;
 	int input_file_len = 0, num_of_lines = 0, ret_val = 0, num_of_threads = 0, key = 0;
 	thread_args** thread_args_arr = NULL;
@@ -401,6 +385,7 @@ int main(int argc, char* argv[])
 	action_input = argv[4];
 	input_file_len = strlen(argv[1]);
 
+
 	if (is_not_valid_input_args(key, num_of_threads, action_input, argc))
 		return 1;
 
@@ -408,6 +393,12 @@ int main(int argc, char* argv[])
 	action_mode = action_input[1];
 
 	hFile = get_input_file_handle(input_file_name);
+	if (NULL == hFile)
+	{
+		printf("Error while opening input file. Exit program\n");
+		return 1;
+	}
+
 	dwFileSize = GetFileSize(hFile, NULL);
 
 	input_txt = txt_file_to_str(hFile, 0, dwFileSize);
@@ -433,16 +424,19 @@ int main(int argc, char* argv[])
 	free(input_txt);
 	close_handles_proper(hFile);
 
-	if (1 == init_output_file(dwFileSize, num_of_lines))
+	output_file_name = init_output_file_name(argv[1], input_file_len);
+	if (1 == init_output_file(dwFileSize, num_of_lines, output_file_name))
 	{
 		free(lines_per_thread);
+		free(output_file_name);
 		return 1;
 	}
 
-	thread_args_arr = init_thread_args(num_of_threads, thread_args_arr, num_of_lines, key, dwFileSize, input_file_name, lines_per_thread);
+	thread_args_arr = init_thread_args(num_of_threads, thread_args_arr, num_of_lines, key, dwFileSize, input_file_name, lines_per_thread, output_file_name);
 	if (NULL == thread_args_arr)
 	{
 		free(lines_per_thread);
+		free(output_file_name);
 		return 1;
 	}
 
@@ -452,7 +446,7 @@ int main(int argc, char* argv[])
 
 	// gets array of all the threads handles and their amount, and closes the handle for each thread 
 	close_threads(p_thread_handles, num_of_threads, wait_code);
-	free_memory(input_file_name, lines_per_thread, thread_args_arr, num_of_threads);
+	free_memory(input_file_name, lines_per_thread, thread_args_arr, num_of_threads, output_file_name);
 
 	return 0;
 }
