@@ -139,15 +139,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="files_and_threads_handler.c" />
     <ClCompile Include="translation.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="test_main.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="files_and_threads_handler.h" />
-    <ClInclude Include="main.h" />
     <ClInclude Include="translation.h" />
     <ClInclude Include="HardCodedData.h" />
+    <ClInclude Include="test_main.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

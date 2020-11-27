@@ -15,13 +15,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="test_main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="translation.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="files_and_threads_handler.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -29,13 +29,10 @@
     <ClInclude Include="HardCodedData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="test_main.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="translation.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="files_and_threads_handler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="main.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
