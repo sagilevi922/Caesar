@@ -76,7 +76,8 @@ char* init_output_file_name(char* input_path, int input_file_len)
 	{
 		*(output_file_name + i) = input_path[i];
 	}
-	*(output_file_name + i) = '\0';
+	*(output_file_name + i) = '\\';
+	*(output_file_name + i+1) = '\0';
 	extern char action_mode;
 	if (action_mode == 'd')
 		strcat(output_file_name, OUTPUT_FILE_NAME_DEC);
