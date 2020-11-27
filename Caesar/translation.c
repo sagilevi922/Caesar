@@ -15,164 +15,11 @@ a specific part of the input text file and writes it to an output textfile.
 #include <string.h>
 #include <windows.h>
 #include "translation.h"
+#include "files_and_threads_handler.h"
 
-// Constants -------------------------------------------------------------------
-
-
-// Function Declarations -------------------------------------------------------
 
 
 // Function Definitions --------------------------------------------------------
-
-
-HANDLE get_input_file_handle(char* input_file_name)
-{
-	if(strstr(input_file_name, ".txt")==NULL)
-	{
-		//printf("Invalid input file name");
-		return NULL;
-	}
-	HANDLE hFile;
-	hFile = CreateFileA(input_file_name,               // file to open
-		GENERIC_READ,          // open for reading
-		FILE_SHARE_READ,       // share for reading
-		NULL,                  // default security
-		OPEN_ALWAYS,         // existing file only
-		FILE_ATTRIBUTE_NORMAL, // normal file
-		NULL);                 // no attr. template
-
-	if (hFile == INVALID_HANDLE_VALUE)
-	{
-		printf(("Terminal failure: unable to open file \"%s\" for read.\n"), input_file_name);
-		return NULL;
-	}
-	if (GetLastError() == ERROR_FILE_NOT_FOUND)
-	{
-		printf("Invalid input file name. no such file existing. Finish program");
-		return NULL;
-	}
-	return hFile;
-}
-//Gets the full path of the input file: input_path, and it's length: input_file_len
-//defines the output file name and path to create, and returns it
-char* init_output_file_name(char* input_path, int input_file_len)
-{
-	char* output_file_name = NULL;
-	int i = 0, last_backslash_pos = 0;
-	
-	while (input_path[i] != '\0')
-	{
-		if (input_path[i] == '\\')
-			last_backslash_pos = i;
-		i++;
-	}
-	output_file_name = (char*)malloc((last_backslash_pos+2+OUTPUT_FILE_NAME_SIZE) * sizeof(char));
-	if (NULL == output_file_name)
-	{
-		printf("Failed to allocate memory.\n");
-		return NULL;
-	}
-	i = 0;
-	if (last_backslash_pos)
-		for (i = 0; i <= last_backslash_pos; i++)
-		{
-			*(output_file_name + i) = input_path[i];
-		}
-	*(output_file_name + i) = '\0';
-	extern char action_mode;
-	if (action_mode == 'd')
-		strcat(output_file_name, OUTPUT_FILE_NAME_DEC);
-	else
-		strcat(output_file_name, OUTPUT_FILE_NAME_ENC);
-	printf("output_file_name is: %s", output_file_name);
-	return output_file_name;
-}
-HANDLE create_file_for_write(char* output_file_name)
-{
-	DWORD file_ptr;
-	HANDLE hFile;
-	extern char action_mode;
-	hFile = CreateFileA(output_file_name,               // file to open
-		GENERIC_WRITE,          // open for reading
-		FILE_SHARE_WRITE,       // share for reading
-		NULL,                  // default security
-		OPEN_ALWAYS,         // existing file only
-		FILE_ATTRIBUTE_NORMAL, // normal file
-		NULL);                 // no attr. template
-
-	if (hFile == INVALID_HANDLE_VALUE)
-	{
-		printf(("Terminal failure: unable to open the output file for write.\n"));
-		return NULL;
-	}
-
-	return hFile;
-}
-
-int close_handles_proper(HANDLE file_handle)
-{
-	//arguments check - exrported function
-	if (file_handle == INVALID_HANDLE_VALUE)
-	{
-		printf("Invalid HANDLE value, can't close this HANDLE.\n");
-	}
-	int ret_val = 0;
-	ret_val = CloseHandle(file_handle);
-	if (false == ret_val)
-	{
-		printf("Error when closing\n");
-		return ERROR_CODE;
-	}
-	return 1;
-
-}
-
-char* txt_file_to_str(HANDLE hFile,int start_pos, int input_size)
-{
-	
-	//arguments check - exrported function
-	if (hFile == INVALID_HANDLE_VALUE)
-	{
-		return NULL;
-	}
-	if (start_pos < 0 || input_size < 0)
-	{
-		printf("invalid starting position for current thread");
-
-		close_handles_proper(hFile);
-		return NULL;
-	}
-	DWORD  dwBytesRead = 0;
-
-	char* input_txt = NULL;
-	input_txt = (char*)malloc((input_size+1) * sizeof(char));
-	if (NULL == input_txt)
-	{
-		printf("Failed to allocate memory.\n");
-		return NULL;
-	}
-
-	if (FALSE == ReadFile(hFile, input_txt, input_size, &dwBytesRead, NULL))
-	{
-		printf("Terminal failure: Unable to read from file.\n GetLastError=%08x\n", GetLastError());
-		close_handles_proper(hFile);
-		free(input_txt);
-		return NULL;
-	}
-
-	if (dwBytesRead > 0 && dwBytesRead <= input_size)
-	{
-		input_txt[dwBytesRead] = '\0'; // NULL character
-		//printf("succsfull read %d bytes: \n", dwBytesRead);
-		//printf("\ninput txt:\n%s\n\n", input_txt);
-	}
-	else if (dwBytesRead == 0)
-	{
-		printf("No data read from file\n");
-	}
-
-	return input_txt;
-}
 
 char translate_char(char curr_char, int decr_key)
 {
@@ -218,11 +65,11 @@ int cyclic(int to_round, int top)
 	return top + to_round;
 }
 
-void decrypt_and_write(char* enc_str, int key, int enc_str_size, HANDLE oFile, int start_pos)
+void translate_and_write(char* file_txt_str, int key, int enc_str_size, HANDLE oFile, int start_pos)
 {
 	for (int i = 0; i < enc_str_size; i++)
 	{
-		enc_str[i] = translate_char(enc_str[i], key);
+		file_txt_str[i] = translate_char(file_txt_str[i], key);
 	}
 	DWORD  dwBytesWritten = 0;
 	DWORD  file_ptr;
@@ -235,13 +82,13 @@ void decrypt_and_write(char* enc_str, int key, int enc_str_size, HANDLE oFile, i
 	);
 
 
-	if (FALSE == WriteFile(oFile, enc_str, enc_str_size, &dwBytesWritten, NULL))
+	if (FALSE == WriteFile(oFile, file_txt_str, enc_str_size, &dwBytesWritten, NULL))
 	{
 		printf("Terminal failure: Unable to write to file.\n GetLastError=%08x\n", GetLastError());
 		close_handles_proper(oFile);
 		return;
 	}
-	printf("\noutput:\n%s\n\n", enc_str);
+	printf("\noutput:\n%s\n\n", file_txt_str);
 	printf("\dwBytesWritten:\n%d\n\n", dwBytesWritten);
 
 
@@ -297,7 +144,7 @@ DWORD WINAPI translate_file(LPVOID lpParam)
 	if (input_txt != NULL)
 	{
 		oFile = create_file_for_write(output_file_path);
-		decrypt_and_write(input_txt, temp_arg->key, input_size, oFile, temp_arg->start_pos);
+		translate_and_write(input_txt, temp_arg->key, input_size, oFile, temp_arg->start_pos);
 		free(input_txt);
 		if (close_handles_proper(oFile) != 1)
 			return 1;

@@ -8,18 +8,6 @@
 #include <windows.h>
 #include "HardCodedData.h"
 
-// Data structure --------------------------------------------------------------
-
-// container of arguments for the thread
-typedef struct thread_arguments {
-	char* input_file;
-	//char output_file[OUTPUT_FILE_NAME_SIZE];
-	char* output_file;
-	int start_pos;
-	int end_pos;
-	int key;
-} thread_args;
-
 // Function Declarations -------------------------------------------------------
 
 // Gets a char: 'curr_char' and a key: 'decr_key' and returns deycrpited/encryped char if the char is letter or digit
@@ -29,24 +17,10 @@ char translate_char(char curr_char, int decr_key);
 // Gets a number to round: 'to_round' and a max range val: 'top' and returns a moudlu number
 int cyclic(int to_round, int top);
 
-// gets a HANDLE and close it properly, return 1 in case of sucssful closing, else return errorcode
-int close_handles_proper(HANDLE file_handle);
 
-// Gets a handle for the input file, and a start position to where
-// it should start reading, and how many byts to read
-// and copy it to a dynamic string.
-char* txt_file_to_str(HANDLE hFile, int start_pos, int input_size);
-
-// gets a string of the input file name, open a file with this name if exist,
-// and then return a handle to this file
-HANDLE get_input_file_handle(char* input_file_name);
-
-//Gets the full path of the input file: input_path, and it's length: input_file_len
-//defines the output file name and path to create, and returns it
-char* init_output_file_name(char* input_path, int input_file_len);
-
-// create and returns handle for the output text file.
-HANDLE create_file_for_write(char* output_file_name);
+// translate the str:'enc_str' char by char according to action mode, and then write the str to
+// the output file.
+void translate_and_write(char* file_txt_str, int key, int enc_str_size, HANDLE oFile, int start_pos);
 
 // The start function of the translation thread.
 // gets a pointer to struct 'thread_arguments' which contains an input fille name to
