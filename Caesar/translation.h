@@ -10,15 +10,6 @@
 
 // Data structure --------------------------------------------------------------
 
-// container of arguments for the thread
-typedef struct thread_arguments {
-	char* input_file;
-	//char output_file[OUTPUT_FILE_NAME_SIZE];
-	char* output_file;
-	int start_pos;
-	int end_pos;
-	int key;
-} thread_args;
 
 // Function Declarations -------------------------------------------------------
 

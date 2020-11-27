@@ -15,6 +15,7 @@ a specific part of the input text file and writes it to an output textfile.
 #include <string.h>
 #include <windows.h>
 #include "translation.h"
+#include "main.h"
 
 // Constants -------------------------------------------------------------------
 
@@ -81,9 +82,9 @@ char* init_output_file_name(char* input_path, int input_file_len)
 	*(output_file_name + i) = '\0';
 	extern char action_mode;
 	if (action_mode == 'd')
-		strcat(output_file_name, OUTPUT_FILE_NAME_DEC);
+		strcat_s(output_file_name, (last_backslash_pos + 2 + OUTPUT_FILE_NAME_SIZE), OUTPUT_FILE_NAME_DEC);
 	else
-		strcat(output_file_name, OUTPUT_FILE_NAME_ENC);
+		strcat_s(output_file_name, (last_backslash_pos + 2 + OUTPUT_FILE_NAME_SIZE), OUTPUT_FILE_NAME_ENC);
 	printf("output_file_name is: %s", output_file_name);
 	return output_file_name;
 }

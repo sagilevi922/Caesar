@@ -3,7 +3,7 @@
 #include "translation.h"
 #include "HardCodedData.h"
 #include <stdbool.h>
-
+#include "main.h"
 
 //
 //typedef struct thread_arguments {
