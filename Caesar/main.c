@@ -344,9 +344,9 @@ int init_input_vars(char* input_args[], int num_of_args, int* key, int* num_of_t
 
 	action_input = input_args[4];
 
-	if (num_of_threads <= 0)
+	if (num_of_threads <= 0 || num_of_threads<=64)
 	{
-		printf("Invalid threads number, enter only postive number"); //Invalid key.
+		printf("Invalid threads number, enter only postive integer number, maximum 64"); //Invalid key.
 		return 1;
 	}
 
