@@ -85,7 +85,7 @@ char* init_output_file_name(char* input_path, int input_file_len)
 		strcat_s(output_file_name, (last_backslash_pos + 2 + OUTPUT_FILE_NAME_SIZE), OUTPUT_FILE_NAME_DEC);
 	else
 		strcat_s(output_file_name, (last_backslash_pos + 2 + OUTPUT_FILE_NAME_SIZE), OUTPUT_FILE_NAME_ENC);
-	printf("output_file_name is: %s", output_file_name);
+	
 	return output_file_name;
 }
 HANDLE create_file_for_write(char* output_file_name)
@@ -242,8 +242,6 @@ void decrypt_and_write(char* enc_str, int key, int enc_str_size, HANDLE oFile, i
 		close_handles_proper(oFile);
 		return;
 	}
-	printf("\noutput:\n%s\n\n", enc_str);
-
 
 }
 
@@ -263,14 +261,6 @@ DWORD WINAPI translate_file(LPVOID lpParam)
 	wait_res = WaitForSingleObject(semaphore_gun, MAX_WAITING_TIME);
 	if (wait_res != WAIT_OBJECT_0)
 		return 1;
-
-	printf("\n\ncreated thread\n\n");
-	printf("%c action", action_mode);
-	printf("key: %d\n", temp_arg->key);
-	printf("start_pos: %d\n", temp_arg->start_pos);
-	printf("end_pos: %d\n", temp_arg->end_pos);
-	printf("output_file: %s\n", temp_arg->output_file);
-	printf("input_file: %s\n", temp_arg->input_file);
 
 	if (temp_arg->start_pos == temp_arg->end_pos)
 	{

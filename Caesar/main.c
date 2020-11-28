@@ -82,12 +82,6 @@ int* init_lines_per_thread(int num_of_threads, int num_of_lines)
 		i++;
 	}
 
-	for (i = 0; i < num_of_threads; i++)
-	{
-		printf("lines_per_thread[%d] : %d\n",i, lines_per_thread[i]);
-
-	}
-
 	return lines_per_thread;
 }
 
@@ -120,11 +114,7 @@ void init_start_points(int* lines_per_thread, char* input_f_str, int file_size, 
 		num_of_lines = 0;
 		lines_per_thread[i] = pos-1;
 	}
-	for (i = 0; i < num_of_threads; i++)
-	{
-		printf("lines_per_thread2 [%d] : %d\n", i, lines_per_thread[i]);
 
-	}
 }
 
 //Gets the entrance function of the new thread: p_start_routine, it's id: p_thread_id,
@@ -463,10 +453,11 @@ int main(int argc, char* argv[])
 	{
 		close_threads(p_thread_handles, num_of_threads, -1, semaphore_gun);
 		free_memory(input_file_name, lines_per_thread, thread_args_arr, num_of_threads, output_file_name);
-		return 0;
+		return 1;
 	}
 	wait_code = WaitForMultipleObjects(num_of_threads, p_thread_handles, TRUE, MAX_WAITING_TIME);
 
+	printf("file translated succsefully and is found at:\n\"%s\"\n", output_file_name);
 	// gets array of all the threads handles and their amount, and closes the handle for each thread 
 	close_threads(p_thread_handles, num_of_threads, wait_code, semaphore_gun);
 	free_memory(input_file_name, lines_per_thread, thread_args_arr, num_of_threads, output_file_name);

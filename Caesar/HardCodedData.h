@@ -5,6 +5,6 @@
 #define MAX_WAITING_TIME 10000
 #define __IO_THREAD_H__
 #define OUTPUT_FILE_NAME_DEC "decrypted.txt"
-#define OUTPUT_FILE_NAME_ENC "encryped.txt"
+#define OUTPUT_FILE_NAME_ENC "encrypted.txt"
 #define OUTPUT_FILE_NAME_SIZE 13
 #define ERROR_CODE ((int)(-1))
