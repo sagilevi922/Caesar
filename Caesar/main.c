@@ -302,6 +302,11 @@ thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr
 	}
 
 	int start_pos = 0, end_pos = 0;
+	int last_thread_pos = 0;
+	if (num_of_threads > num_of_lines)
+		last_thread_pos = num_of_lines;
+	else
+		last_thread_pos = num_of_threads;
 
 	for (int i = 0; i < num_of_threads; i++)
 	{
@@ -313,8 +318,7 @@ thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr
 		else
 		{
 			start_pos = lines_per_thread[i];
-
-			if (i != num_of_lines - 1)
+			if (i != last_thread_pos - 1)
 				end_pos = lines_per_thread[i + 1];
 			else
 				end_pos = dwFileSize;
