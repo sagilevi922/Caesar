@@ -251,12 +251,18 @@ DWORD WINAPI translate_file(LPVOID lpParam)
 {
 	HANDLE hFile;
 	HANDLE oFile;
+	HANDLE semaphore_gun;
 	DWORD file_ptr;
 	extern char action_mode;
 	thread_args* temp_arg = (thread_args*)lpParam;
 	char* input_txt = NULL;
 	char* output_file_path = NULL;
+	bool wait_res;
 
+	semaphore_gun = temp_arg->semaphore_gun;
+	wait_res = WaitForSingleObject(semaphore_gun, MAX_WAITING_TIME);
+	if (wait_res != WAIT_OBJECT_0)
+		return 1;
 
 	printf("\n\ncreated thread\n\n");
 	printf("%c action", action_mode);

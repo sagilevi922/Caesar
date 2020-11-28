@@ -12,6 +12,7 @@ typedef struct thread_arguments {
 	int start_pos;
 	int end_pos;
 	int key;
+	HANDLE semaphore_gun;
 } thread_args;
 
 //IO module?
@@ -48,7 +49,7 @@ static HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
 	LPDWORD p_thread_id, thread_args* args);
 
 // gets paremters for thread and create a thread argument struct pointer
-thread_args* create_thread_arg(int key, int start_pos, int end_pos, char* input_file_name, char* output_file_name);
+thread_args* create_thread_arg(int key, int start_pos, int end_pos, char* input_file_name, char* output_file_name, HANDLE semaphore_gun);
 
 //creates a output file according to the arguments: size: file_size, and number of lines: num_of_lines
 //and according to the right mode: encryption or decryption.
@@ -61,10 +62,10 @@ int init_output_file(int file_size, int num_of_lines, char* output_file_name);
 void free_memory(char* input_file_name, int* lines_per_thread, thread_args** thread_args_arr, int num_of_threads, char* output_file_name);
 
 // gets array of all the threads handles and their amount, and closes the handle for each thread 
-void close_threads(HANDLE p_thread_handles[], int num_of_threads, DWORD wait_code);
+void close_threads(HANDLE p_thread_handles[], int num_of_threads, DWORD wait_code, HANDLE semaphore_gun);
 
 // gets number of thread and a pointer to array of thread args, and allocats dynamic memory for it. 
-thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr, int num_of_lines, int key, DWORD dwFileSize, char* input_file_name, int* lines_per_thread, char* output_file_name);
+thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr, int num_of_lines, int key, DWORD dwFileSize, char* input_file_name, int* lines_per_thread, char* output_file_name, HANDLE semaphore_gun);
 
 // gets the input args from the cmd, and returns true if one of them is not valid. 
 int is_not_valid_input_args(int key, int num_of_threads, char* action_input, int num_of_args);

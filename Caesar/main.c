@@ -168,7 +168,7 @@ static HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
 }
 
 // gets paremters for thread and create a thread argument struct pointer
-thread_args* create_thread_arg(int key, int start_pos, int end_pos, char* input_file_name, char* output_file_name)
+thread_args* create_thread_arg(int key, int start_pos, int end_pos, char* input_file_name, char* output_file_name, HANDLE semaphore_gun)
 {
 	thread_args* temp_arg = (thread_args*)malloc(sizeof(thread_args));
 	if (NULL == temp_arg)
@@ -183,7 +183,7 @@ thread_args* create_thread_arg(int key, int start_pos, int end_pos, char* input_
 	//strcpy(temp_arg->output_file, output_file_name);
 	//strcpy(temp_arg->output_file, OUTPUT_FILE_NAME_ENC);
 	temp_arg->input_file = input_file_name;
-	
+	temp_arg->semaphore_gun = semaphore_gun;
 	return temp_arg;
 }
 
@@ -259,17 +259,21 @@ void free_memory(char* input_file_name, int* lines_per_thread, thread_args** thr
 }
 
 // gets array of all the threads handles and their amount, and closes the handle for each thread 
-void close_threads(HANDLE p_thread_handles[], int num_of_threads, DWORD wait_code)
+void close_threads(HANDLE p_thread_handles[], int num_of_threads, DWORD wait_code, HANDLE semaphore_gun)
 {
+
+
 	int ret_val = 0;
 	// Checking wait code
-
-	if (WAIT_OBJECT_0 != wait_code)
+	if (-1 != wait_code)
 	{
-		printf("Error when waiting");
-		return ERROR_CODE;
+		if (WAIT_OBJECT_0 != wait_code)
+		{
+			printf("Error when waiting: %d", wait_code);
+		}
+		// Terminate still running Thread
 	}
-	// Terminate still running Thread
+	close_handles_proper(semaphore_gun);
 
 	for (int i = 0; i < num_of_threads; i++)
 	{
@@ -277,8 +281,7 @@ void close_threads(HANDLE p_thread_handles[], int num_of_threads, DWORD wait_cod
 		ret_val = TerminateThread(p_thread_handles[i], BRUTAL_TERMINATION_CODE);
 		if (false == ret_val)
 		{
-			printf("Error when terminating\n");
-			return ERROR_CODE;
+			printf("Error when terminating: %d\n", ERROR_CODE);
 		}
 	}
 	// Close thread handles
@@ -290,7 +293,7 @@ void close_threads(HANDLE p_thread_handles[], int num_of_threads, DWORD wait_cod
 }
 
 // gets number of thread and a pointer to array of thread args, and allocats dynamic memory for it. 
-thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr,int num_of_lines,int key,DWORD dwFileSize, char* input_file_name, int* lines_per_thread, char* output_file_name)
+thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr,int num_of_lines,int key,DWORD dwFileSize, char* input_file_name, int* lines_per_thread, char* output_file_name, HANDLE semaphore_gun)
 {
 	thread_args_arr = (thread_args**)malloc(num_of_threads * sizeof(thread_args*));
 
@@ -322,7 +325,7 @@ thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr
 			else
 				end_pos = dwFileSize;
 		}
-		thread_args_arr[i] = create_thread_arg(key, start_pos, end_pos, input_file_name, output_file_name);
+		thread_args_arr[i] = create_thread_arg(key, start_pos, end_pos, input_file_name, output_file_name, semaphore_gun);
 		if (NULL == thread_args_arr[i])
 		{
 			for (int j = 0; j < i; j++)
@@ -379,9 +382,12 @@ int main(int argc, char* argv[])
 	int input_file_len = 0, num_of_lines = 0, ret_val = 0, num_of_threads = 0, key = 0;
 	thread_args** thread_args_arr = NULL;
 	HANDLE hFile;
+	HANDLE semaphore_gun;
+
 	DWORD dwFileSize, wait_code;
 	HANDLE p_thread_handles[THREADS_LIMIT] = { 0 };
 	LPDWORD p_thread_ids[THREADS_LIMIT] = { 0 };
+	BOOL release_res;
 
 	key = *argv[2] - '0';
 	num_of_threads = *argv[3] - '0';
@@ -435,9 +441,23 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	thread_args_arr = init_thread_args(num_of_threads, thread_args_arr, num_of_lines, key, dwFileSize, input_file_name, lines_per_thread, output_file_name);
+	semaphore_gun = CreateSemaphore(
+		NULL,	/* Default security attributes */
+		0,		/* Initial Count - no slots are full */
+		num_of_threads,		/* Maximum Count */
+		NULL); /* un-named */
+
+	if (NULL == semaphore_gun)
+	{
+		free(lines_per_thread);
+		free(output_file_name);
+		return 1;
+	}
+
+	thread_args_arr = init_thread_args(num_of_threads, thread_args_arr, num_of_lines, key, dwFileSize, input_file_name, lines_per_thread, output_file_name, semaphore_gun);
 	if (NULL == thread_args_arr)
 	{
+		close_handles_proper(semaphore_gun);
 		free(lines_per_thread);
 		free(output_file_name);
 		return 1;
@@ -445,10 +465,24 @@ int main(int argc, char* argv[])
 
 	for (int i = 0; i < num_of_threads; i++)
 		p_thread_handles[i] = CreateThreadSimple(translate_file, p_thread_ids[i], thread_args_arr[i]);
+	
+
+	release_res = ReleaseSemaphore(
+		semaphore_gun,
+		num_of_threads, 
+		NULL);
+
+	if (release_res == FALSE)
+	{
+		close_threads(p_thread_handles, num_of_threads, -1, semaphore_gun);
+		free_memory(input_file_name, lines_per_thread, thread_args_arr, num_of_threads, output_file_name);
+		return 0;
+	}
+
 	wait_code = WaitForMultipleObjects(num_of_threads, p_thread_handles, TRUE, MAX_WAITING_TIME);
 
 	// gets array of all the threads handles and their amount, and closes the handle for each thread 
-	close_threads(p_thread_handles, num_of_threads, wait_code);
+	close_threads(p_thread_handles, num_of_threads, wait_code, semaphore_gun);
 	free_memory(input_file_name, lines_per_thread, thread_args_arr, num_of_threads, output_file_name);
 
 	return 0;
