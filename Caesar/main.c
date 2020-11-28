@@ -144,13 +144,6 @@ static HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
 		exit(ERROR_CODE);
 	}
 
-	if (NULL == p_thread_id)
-	{
-		printf("Error when creating a thread");
-		printf("Received null pointer");
-		exit(ERROR_CODE);
-	}
-
 	thread_handle = CreateThread(
 		NULL,            /*  default security attributes */
 		0,               /*  use default stack size */
@@ -158,6 +151,14 @@ static HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
 		args,            /*  argument to thread function */
 		0,               /*  use default creation flags */
 		&p_thread_id);    /*  returns the thread identifier */
+
+
+	if (NULL == p_thread_id)
+	{
+		printf("Error when creating a thread");
+		printf("Received null pointer");
+		exit(ERROR_CODE);
+	}
 
 	if (NULL == thread_handle)
 	{
@@ -381,8 +382,8 @@ int main(int argc, char* argv[])
 	thread_args** thread_args_arr = NULL;
 	HANDLE hFile;
 	DWORD dwFileSize, wait_code;
-	HANDLE p_thread_handles[THREADS_LIMIT];
-	DWORD p_thread_ids[THREADS_LIMIT];
+	HANDLE p_thread_handles[THREADS_LIMIT] = { 0 };
+	DWORD p_thread_ids[THREADS_LIMIT] = { 0 };
 
 	key = *argv[2] - '0';
 	num_of_threads = *argv[3] - '0';
