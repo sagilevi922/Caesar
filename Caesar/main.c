@@ -1,3 +1,14 @@
+// main.c
+/*
+Authors – Matan Achiel - 205642119, Sagi Levi - 205663545
+Project – Ex2 - main.
+Description – This program is the main program - main.c
+gets a 4 args - file path, key for enc/dec, number of threads to use, action mode wheather
+to encript or dycript, it validiate the input args, then examines the input text and gets 
+how many lines it has, and decide how to split the lines for each thread.
+At last creats threads that translte the input file in parllel by using semphores.
+*/
+
 #include <stdio.h>
 #include <windows.h>
 #include "translation.h"
@@ -5,19 +16,10 @@
 #include <stdbool.h>
 #include "main.h"
 
-//
-//typedef struct thread_arguments {
-//	char* input_file;
-//	char output_file[OUTPUT_FILE_NAME_SIZE];
-//	int start_pos;
-//	int end_pos;
-//	int key;
-//} thread_args;
 
 
 // global variable for the thread to know wheater to encrypt or decrypt
 char action_mode = 'd';
-
 
 
 //IO module?
@@ -48,7 +50,6 @@ int get_num_of_lines(char* input_f_str, int file_size)
 //		p_thread_id);    /*  returns the thread identifier */
 //}
 
-// Gets number of threads: 'num_of_threads' and number of lines: 'num_of_lines' and returns an array which contains the number of lines for each thread.
 int* init_lines_per_thread(int num_of_threads, int num_of_lines)
 {
 	
@@ -167,7 +168,6 @@ static HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
 	return thread_handle;
 }
 
-// gets paremters for thread and create a thread argument struct pointer
 thread_args* create_thread_arg(int key, int start_pos, int end_pos, char* input_file_name, char* output_file_name, HANDLE semaphore_gun)
 {
 	thread_args* temp_arg = (thread_args*)malloc(sizeof(thread_args));
@@ -258,7 +258,6 @@ void free_memory(char* input_file_name, int* lines_per_thread, thread_args** thr
 		free(output_file_name);
 }
 
-// gets array of all the threads handles and their amount, and closes the handle for each thread 
 void close_threads(HANDLE p_thread_handles[], int num_of_threads, DWORD wait_code, HANDLE semaphore_gun)
 {
 
@@ -292,7 +291,6 @@ void close_threads(HANDLE p_thread_handles[], int num_of_threads, DWORD wait_cod
 	
 }
 
-// gets number of thread and a pointer to array of thread args, and allocats dynamic memory for it. 
 thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr,int num_of_lines,int key,DWORD dwFileSize, char* input_file_name, int* lines_per_thread, char* output_file_name, HANDLE semaphore_gun)
 {
 	thread_args_arr = (thread_args**)malloc(num_of_threads * sizeof(thread_args*));
@@ -341,21 +339,30 @@ thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr
 	return thread_args_arr;
 }
 
-// gets the input args from the cmd, and returns true if one of them is not valid. 
-int is_not_valid_input_args(int key, int num_of_threads, char* action_input, int num_of_args)
+int init_input_vars(char* input_args[], int num_of_args, int* key, int* num_of_threads, char** input_file_name, int* input_file_len)
 {
-	if (num_of_args != 5)
-	{	
-		//Not enough arguments.
+	char* action_input=NULL; 
+	if (num_of_args != 5) //Not enough arguments.
+	{
 		printf("Invalid input, Please provide encrypted file path, enc/dec key, number of threads and action mode('e'/'d')");
 		return 1;
 	}
 
-	if (key < 0)
+	if (*input_args[2] == '0')
+		*key = 0;
+	else
 	{
-		printf("Invalid key, enter only postive number"); //Invalid key.
-		return 1;
+		*key = strtol(input_args[2], NULL, 10);
+		if (*key == 0)
+		{
+			printf("invalid argument for key");
+			return 1;
+		}
 	}
+
+	*num_of_threads = strtol(input_args[3], NULL, 10);
+
+	action_input = input_args[4];
 
 	if (num_of_threads <= 0)
 	{
@@ -368,38 +375,30 @@ int is_not_valid_input_args(int key, int num_of_threads, char* action_input, int
 		printf("Invalid last argument, for encryption type '-e' for decryption type '-d'"); //invalid dec/enc mode.
 		return 1;
 	}
+
+	action_mode = action_input[1]; // init global var for action - enc or dec
+	*input_file_len = strlen(input_args[1]);
+	*input_file_name = input_args[1];
+
 	return 0;
 }
 
 
 int main(int argc, char* argv[])
 {
-	char* input_txt = NULL;
-	char* action_input ="";
-	char* input_file_name = NULL;
-	char* output_file_name = NULL;
+	char* input_txt = NULL, * input_file_name = NULL, * output_file_name = NULL;
 	int* lines_per_thread = NULL;
 	int input_file_len = 0, num_of_lines = 0, ret_val = 0, num_of_threads = 0, key = 0;
 	thread_args** thread_args_arr = NULL;
-	HANDLE hFile;
-	HANDLE semaphore_gun;
 
+	HANDLE hFile, semaphore_gun;
 	DWORD dwFileSize, wait_code;
 	HANDLE p_thread_handles[THREADS_LIMIT] = { 0 };
 	LPDWORD p_thread_ids[THREADS_LIMIT] = { 0 };
 	BOOL release_res;
 
-	key = *argv[2] - '0';
-	num_of_threads = *argv[3] - '0';
-	action_input = argv[4];
-	input_file_len = strlen(argv[1]);
-
-
-	if (is_not_valid_input_args(key, num_of_threads, action_input, argc))
+	if (init_input_vars(argv, argc, &key, &num_of_threads, &input_file_name, &input_file_len))
 		return 1;
-
-	input_file_name = argv[1];
-	action_mode = action_input[1];
 
 	hFile = get_input_file_handle(input_file_name);
 	if (NULL == hFile)
@@ -409,8 +408,7 @@ int main(int argc, char* argv[])
 	}
 
 	dwFileSize = GetFileSize(hFile, NULL);
-
-	input_txt = txt_file_to_str(hFile, 0, dwFileSize);
+	input_txt = txt_file_to_str(hFile, 0, dwFileSize); // gets pointer to str containing the input text
 	if (NULL == input_txt)
 	{
 		printf("Error while reading input file. Exit program\n");
@@ -420,7 +418,7 @@ int main(int argc, char* argv[])
 
 	num_of_lines = get_num_of_lines(input_txt, dwFileSize);
 	
-	lines_per_thread = init_lines_per_thread(num_of_threads, num_of_lines);
+	lines_per_thread = init_lines_per_thread(num_of_threads, num_of_lines); // init array of how many lines for each thread
 	if (NULL == lines_per_thread)
 	{
 		free(input_txt);
@@ -428,12 +426,11 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	init_start_points(lines_per_thread, input_txt, dwFileSize, num_of_threads);
-	
+	init_start_points(lines_per_thread, input_txt, dwFileSize, num_of_threads); // sets for each thread its start pos in the text
 	free(input_txt);
 	close_handles_proper(hFile);
 
-	output_file_name = init_output_file_name(argv[1], input_file_len);
+	output_file_name = init_output_file_name(argv[1], input_file_len); // creates an output file
 	if (1 == init_output_file(dwFileSize, num_of_lines, output_file_name))
 	{
 		free(lines_per_thread);
@@ -441,12 +438,7 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	semaphore_gun = CreateSemaphore(
-		NULL,	/* Default security attributes */
-		0,		/* Initial Count - no slots are full */
-		num_of_threads,		/* Maximum Count */
-		NULL); /* un-named */
-
+	semaphore_gun = CreateSemaphore(NULL, 0, num_of_threads, NULL);  // creats a semphore for paralllel threads func
 	if (NULL == semaphore_gun)
 	{
 		free(lines_per_thread);
@@ -463,22 +455,16 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	for (int i = 0; i < num_of_threads; i++)
+	for (int i = 0; i < num_of_threads; i++) 
 		p_thread_handles[i] = CreateThreadSimple(translate_file, p_thread_ids[i], thread_args_arr[i]);
 	
-
-	release_res = ReleaseSemaphore(
-		semaphore_gun,
-		num_of_threads, 
-		NULL);
-
+	release_res = ReleaseSemaphore(semaphore_gun, num_of_threads, NULL);
 	if (release_res == FALSE)
 	{
 		close_threads(p_thread_handles, num_of_threads, -1, semaphore_gun);
 		free_memory(input_file_name, lines_per_thread, thread_args_arr, num_of_threads, output_file_name);
 		return 0;
 	}
-
 	wait_code = WaitForMultipleObjects(num_of_threads, p_thread_handles, TRUE, MAX_WAITING_TIME);
 
 	// gets array of all the threads handles and their amount, and closes the handle for each thread 

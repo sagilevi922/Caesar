@@ -67,6 +67,6 @@ void close_threads(HANDLE p_thread_handles[], int num_of_threads, DWORD wait_cod
 // gets number of thread and a pointer to array of thread args, and allocats dynamic memory for it. 
 thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr, int num_of_lines, int key, DWORD dwFileSize, char* input_file_name, int* lines_per_thread, char* output_file_name, HANDLE semaphore_gun);
 
-// gets the input args from the cmd, and returns true if one of them is not valid. 
-int is_not_valid_input_args(int key, int num_of_threads, char* action_input, int num_of_args);
+// gets the input args from the cmd, and returns 1 if one of them is not valid. 
+int init_input_vars(char* input_args[], int num_of_args, int* key, int* num_of_threads, char** input_file_name, int* input_file_len);
 

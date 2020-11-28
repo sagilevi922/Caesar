@@ -2,7 +2,7 @@
 /*
 Authors – Matan Achiel - 205642119, Sagi Levi - 205663545
 Project – Ex2 - translation.
-Description – This program is open by threads from the main program - main.c
+Description – This program is opened by threads from the main program - main.c
 gets an struct pointer to an arguments from the main
 program and then encrypt/dycrypt depends on a global variable - action_mode
 a specific part of the input text file and writes it to an output textfile.
@@ -28,17 +28,17 @@ a specific part of the input text file and writes it to an output textfile.
 
 HANDLE get_input_file_handle(char* input_file_name)
 {
-	if(strstr(input_file_name, ".txt")==NULL)
-	{
-		//printf("Invalid input file name");
-		return NULL;
-	}
+	//if(strstr(input_file_name, ".txt")==NULL)
+	//{
+	//	//printf("Invalid input file name");
+	//	return NULL;
+	//}
 	HANDLE hFile;
 	hFile = CreateFileA(input_file_name,               // file to open
 		GENERIC_READ,          // open for reading
 		FILE_SHARE_READ,       // share for reading
 		NULL,                  // default security
-		OPEN_ALWAYS,         // existing file only
+		OPEN_EXISTING,         // existing file only
 		FILE_ATTRIBUTE_NORMAL, // normal file
 		NULL);                 // no attr. template
 
