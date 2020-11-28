@@ -90,7 +90,6 @@ char* init_output_file_name(char* input_path, int input_file_len)
 }
 HANDLE create_file_for_write(char* output_file_name)
 {
-	DWORD file_ptr;
 	HANDLE hFile;
 	extern char action_mode;
 	hFile = CreateFileA(output_file_name,               // file to open
@@ -118,12 +117,13 @@ int close_handles_proper(HANDLE file_handle)
 		printf("Invalid HANDLE value, can't close this HANDLE.\n");
 	}
 	int ret_val = 0;
-	ret_val = CloseHandle(file_handle);
-	if (false == ret_val)
-	{
-		printf("Error when closing\n");
-		return ERROR_CODE;
-	}
+	if (file_handle!=0)
+		ret_val = CloseHandle(file_handle);
+		if (false == ret_val)
+		{
+			printf("Error when closing\n");
+			return ERROR_CODE;
+		}
 	return 1;
 
 }
@@ -143,7 +143,7 @@ char* txt_file_to_str(HANDLE hFile,int start_pos, int input_size)
 		close_handles_proper(hFile);
 		return NULL;
 	}
-	DWORD  dwBytesRead = 0;
+	DWORD dwBytesRead = 0;
 
 	char* input_txt = NULL;
 	input_txt = (char*)malloc((input_size+1) * sizeof(char));
@@ -161,7 +161,7 @@ char* txt_file_to_str(HANDLE hFile,int start_pos, int input_size)
 		return NULL;
 	}
 
-	if (dwBytesRead > 0 && dwBytesRead <= input_size)
+	if (dwBytesRead > 0 && (int)dwBytesRead <= input_size)
 	{
 		input_txt[dwBytesRead] = '\0'; // NULL character
 		//printf("succsfull read %d bytes: \n", dwBytesRead);
@@ -243,7 +243,6 @@ void decrypt_and_write(char* enc_str, int key, int enc_str_size, HANDLE oFile, i
 		return;
 	}
 	printf("\noutput:\n%s\n\n", enc_str);
-	printf("\dwBytesWritten:\n%d\n\n", dwBytesWritten);
 
 
 }

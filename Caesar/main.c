@@ -26,7 +26,6 @@ char action_mode = 'd';
 int get_num_of_lines(char* input_f_str, int file_size)
 {
 	int num_of_lines = 0;
-	char tav;
 	for (int i= 0; i<file_size;i++)
 	{
 		if (input_f_str[i] == '\n')
@@ -97,7 +96,6 @@ void init_start_points(int* lines_per_thread, char* input_f_str, int file_size, 
 {
 	int pos = 0;
 	int num_of_lines = 0;
-	char tav;
 	int i = 0;
 	int num_of_lines_to_seek = lines_per_thread[0]; // intial how many lines to look for
 	lines_per_thread[0] = 0; // first line starts at zero
@@ -383,7 +381,7 @@ int main(int argc, char* argv[])
 	HANDLE hFile;
 	DWORD dwFileSize, wait_code;
 	HANDLE p_thread_handles[THREADS_LIMIT] = { 0 };
-	DWORD p_thread_ids[THREADS_LIMIT] = { 0 };
+	LPDWORD p_thread_ids[THREADS_LIMIT] = { 0 };
 
 	key = *argv[2] - '0';
 	num_of_threads = *argv[3] - '0';
