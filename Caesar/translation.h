@@ -20,6 +20,11 @@ char translate_char(char curr_char, int decr_key);
 // Gets a number to round: 'to_round' and a max range val: 'top' and returns a moudlu number
 int cyclic(int to_round, int top);
 
+//Gets a section to translate from the input file: enc_str, it's lentgh:enc_str_size , a HANDLE, to the output file: oFile,
+//and the position at the output file from which to start to write: start_pos
+//Finally, it writes the translated section to the output file
+void decrypt_and_write(char* enc_str, int key, int enc_str_size, HANDLE oFile, int start_pos);
+
 // gets a HANDLE and close it properly, return 1 in case of sucssful closing, else return errorcode
 int close_handles_proper(HANDLE file_handle);
 

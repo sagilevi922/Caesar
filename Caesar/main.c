@@ -9,6 +9,8 @@ how many lines it has, and decide how to split the lines for each thread.
 At last creats threads that translte the input file in parllel by using semphores.
 */
 
+// Includes --------------------------------------------------------------------
+
 #include <stdio.h>
 #include <windows.h>
 #include "translation.h"
@@ -21,8 +23,8 @@ At last creats threads that translte the input file in parllel by using semphore
 // global variable for the thread to know wheater to encrypt or decrypt
 char action_mode = 'd';
 
+// Function Definitions --------------------------------------------------------
 
-//IO module?
 //Gets a str of the input text file content: input_f_str, and the size of the content: file_size.
 //returned value: the number of lines in the file.
 int get_num_of_lines(char* input_f_str, int file_size)
@@ -36,24 +38,9 @@ int get_num_of_lines(char* input_f_str, int file_size)
 	return num_of_lines+1;
 }
 
-//static HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
-//	LPDWORD p_thread_id)
-//{
-//	/* Should check for NULL pointers. Skipped for the sake of simplicity. */
-//
-//	return CreateThread(
-//		NULL,            /*  default security attributes */
-//		0,               /*  use default stack size */
-//		p_start_routine, /*  thread function */
-//		NULL,            /*  argument to thread function */
-//		0,               /*  use default creation flags */
-//		p_thread_id);    /*  returns the thread identifier */
-//}
-
+// Gets number of threads: 'num_of_threads' and number of lines: 'num_of_lines' and returns an array which contains the number of lines for each thread.
 int* init_lines_per_thread(int num_of_threads, int num_of_lines)
-{
-	
-
+{	
 	int* lines_per_thread = (int*)malloc((num_of_threads) * sizeof(int));
 
 	if (NULL == lines_per_thread)
@@ -85,8 +72,8 @@ int* init_lines_per_thread(int num_of_threads, int num_of_lines)
 	return lines_per_thread;
 }
 
-// Gets an array with lines for each thread: 'lines_per_thread' and retruns an array with the initial pos for each thread to start reading from the input file
-//update after winapi:
+// Gets an array with lines for each thread: 'lines_per_thread' and retruns an array
+//with the initial pos for each thread to start reading from the input file
 void init_start_points(int* lines_per_thread, char* input_f_str, int file_size, int num_of_threads)
 {
 	int pos = 0;
@@ -158,6 +145,7 @@ static HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
 	return thread_handle;
 }
 
+// gets paremters for thread and create a thread argument struct pointer
 thread_args* create_thread_arg(int key, int start_pos, int end_pos, char* input_file_name, char* output_file_name, HANDLE semaphore_gun)
 {
 	thread_args* temp_arg = (thread_args*)malloc(sizeof(thread_args));
@@ -170,8 +158,6 @@ thread_args* create_thread_arg(int key, int start_pos, int end_pos, char* input_
 	temp_arg->start_pos = start_pos;
 	temp_arg->end_pos = end_pos;
 	temp_arg->output_file = output_file_name;
-	//strcpy(temp_arg->output_file, output_file_name);
-	//strcpy(temp_arg->output_file, OUTPUT_FILE_NAME_ENC);
 	temp_arg->input_file = input_file_name;
 	temp_arg->semaphore_gun = semaphore_gun;
 	return temp_arg;
@@ -248,6 +234,7 @@ void free_memory(char* input_file_name, int* lines_per_thread, thread_args** thr
 		free(output_file_name);
 }
 
+// gets array of all the threads handles and their amount, and closes the handle for each thread 
 void close_threads(HANDLE p_thread_handles[], int num_of_threads, DWORD wait_code, HANDLE semaphore_gun)
 {
 
@@ -266,7 +253,6 @@ void close_threads(HANDLE p_thread_handles[], int num_of_threads, DWORD wait_cod
 
 	for (int i = 0; i < num_of_threads; i++)
 	{
-		// TODO correct terminate argument
 		ret_val = TerminateThread(p_thread_handles[i], BRUTAL_TERMINATION_CODE);
 		if (false == ret_val)
 		{
@@ -281,6 +267,7 @@ void close_threads(HANDLE p_thread_handles[], int num_of_threads, DWORD wait_cod
 	
 }
 
+// gets number of thread and a pointer to array of thread args, and allocats dynamic memory for it. 
 thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr,int num_of_lines,int key,DWORD dwFileSize, char* input_file_name, int* lines_per_thread, char* output_file_name, HANDLE semaphore_gun)
 {
 	thread_args_arr = (thread_args**)malloc(num_of_threads * sizeof(thread_args*));
@@ -325,10 +312,13 @@ thread_args** init_thread_args(int num_of_threads, thread_args** thread_args_arr
 		}
 	}
 
-
 	return thread_args_arr;
 }
 
+//Gets the arguments from the command line: input_args[], their amount: num_of_args, check if they are valid,
+//and initiate the following empty arguments: num_of_threads - number of threads to create
+//, input_file_name - full path of the input file, and input_file_len - the length of the input file name
+//In the end it returns 1 if at least one of them is not valid,or  0 else
 int init_input_vars(char* input_args[], int num_of_args, int* key, int* num_of_threads, char** input_file_name, int* input_file_len)
 {
 	char* action_input=NULL; 

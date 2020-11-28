@@ -17,22 +17,13 @@ a specific part of the input text file and writes it to an output textfile.
 #include "translation.h"
 #include "main.h"
 
-// Constants -------------------------------------------------------------------
-
-
-// Function Declarations -------------------------------------------------------
-
 
 // Function Definitions --------------------------------------------------------
 
-
+// gets a string of the input file name, open a file with this name if exist,
+// and then return a handle to this file
 HANDLE get_input_file_handle(char* input_file_name)
 {
-	//if(strstr(input_file_name, ".txt")==NULL)
-	//{
-	//	//printf("Invalid input file name");
-	//	return NULL;
-	//}
 	HANDLE hFile;
 	hFile = CreateFileA(input_file_name,               // file to open
 		GENERIC_READ,          // open for reading
@@ -88,6 +79,7 @@ char* init_output_file_name(char* input_path, int input_file_len)
 	
 	return output_file_name;
 }
+// create and returns handle for the output text file.
 HANDLE create_file_for_write(char* output_file_name)
 {
 	HANDLE hFile;
@@ -109,6 +101,7 @@ HANDLE create_file_for_write(char* output_file_name)
 	return hFile;
 }
 
+// gets a HANDLE and close it properly, return 1 in case of sucssful closing, else return errorcode
 int close_handles_proper(HANDLE file_handle)
 {
 	//arguments check - exrported function
@@ -128,6 +121,9 @@ int close_handles_proper(HANDLE file_handle)
 
 }
 
+// Gets a handle for the input file, and a start position to where
+// it should start reading, and how many byts to read
+// and copy it to a dynamic string.
 char* txt_file_to_str(HANDLE hFile,int start_pos, int input_size)
 {
 	
@@ -164,8 +160,6 @@ char* txt_file_to_str(HANDLE hFile,int start_pos, int input_size)
 	if (dwBytesRead > 0 && (int)dwBytesRead <= input_size)
 	{
 		input_txt[dwBytesRead] = '\0'; // NULL character
-		//printf("succsfull read %d bytes: \n", dwBytesRead);
-		//printf("\ninput txt:\n%s\n\n", input_txt);
 	}
 	else if (dwBytesRead == 0)
 	{
@@ -175,6 +169,8 @@ char* txt_file_to_str(HANDLE hFile,int start_pos, int input_size)
 	return input_txt;
 }
 
+// Gets a char: 'curr_char' and a key: 'decr_key' and returns deycrpited/encryped char if the char is letter or digit
+// and according to global variable 'action_mode'
 char translate_char(char curr_char, int decr_key)
 {
 	char new_char = 'a';
@@ -214,11 +210,15 @@ char translate_char(char curr_char, int decr_key)
 	return new_char;
 }
 
+// Gets a number to round: 'to_round' and a max range val: 'top' and returns a moudlu number
 int cyclic(int to_round, int top)
 {
 	return top + to_round;
 }
 
+//Gets a section to translate from the input file: enc_str, it's lentgh:enc_str_size , a HANDLE, to the output file: oFile,
+//and the position at the output file from which to start to write: start_pos
+//Finally, it writes the translated section to the output file
 void decrypt_and_write(char* enc_str, int key, int enc_str_size, HANDLE oFile, int start_pos)
 {
 	for (int i = 0; i < enc_str_size; i++)
@@ -245,6 +245,10 @@ void decrypt_and_write(char* enc_str, int key, int enc_str_size, HANDLE oFile, i
 
 }
 
+// The start function of the translation thread.
+// gets a pointer to struct 'thread_arguments' which contains an input fille name to
+// read text from, output file name to write the translted text to, gets a start and end position
+// to know from where position to take the input text, and a key for encrypt/dycrpt.
 DWORD WINAPI translate_file(LPVOID lpParam)
 {
 	HANDLE hFile;
