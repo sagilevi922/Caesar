@@ -328,12 +328,12 @@ int init_input_vars(char* input_args[], int num_of_args, int* key, int* num_of_t
 		return 1;
 	}
 
-	if (*input_args[2] == '0')
+	if (*input_args[2] == '0') // in case of input zero
 		*key = 0;
 	else
 	{
 		*key = strtol(input_args[2], NULL, 10);
-		if (*key == 0)
+		if (*key == 0) // case of failed strtol
 		{
 			printf("invalid argument for key");
 			return 1;
@@ -341,15 +341,13 @@ int init_input_vars(char* input_args[], int num_of_args, int* key, int* num_of_t
 	}
 
 	*num_of_threads = strtol(input_args[3], NULL, 10);
-
-	action_input = input_args[4];
-
-	if (num_of_threads <= 0 || num_of_threads<=64)
+	if (*num_of_threads <= 0 || *num_of_threads > 64)
 	{
-		printf("Invalid threads number, enter only postive integer number, maximum 64"); //Invalid key.
+		printf("Invalid threads number: '%d'\nEnter only positive integer number, maximum 64.", *num_of_threads); //Invalid key.
 		return 1;
 	}
 
+	action_input = input_args[4];
 	if (strcmp(action_input, "-d") != 0 && strcmp(action_input, "-e") != 0)
 	{
 		printf("Invalid last argument, for encryption type '-e' for decryption type '-d'"); //invalid dec/enc mode.
