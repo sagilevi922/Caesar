@@ -108,7 +108,7 @@ void init_start_points(int* lines_per_thread, char* input_f_str, int file_size, 
 //and as struct that contain its arguments: paths of input and output files, a key for operation,
 //starting position of operation and the length of the section to operate.
 //It creates a new thread and return a HANDLE to it.
-static HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
+static HANDLE create_thread_simple(LPTHREAD_START_ROUTINE p_start_routine,
 	LPDWORD p_thread_id, thread_args* args)
 {
 	HANDLE thread_handle;
@@ -434,7 +434,7 @@ int main(int argc, char* argv[])
 	}
 
 	for (int i = 0; i < num_of_threads; i++) 
-		p_thread_handles[i] = CreateThreadSimple(translate_file, p_thread_ids[i], thread_args_arr[i]);
+		p_thread_handles[i] = create_thread_simple(translate_file, p_thread_ids[i], thread_args_arr[i]);
 	
 	release_res = ReleaseSemaphore(semaphore_gun, num_of_threads, NULL);
 	if (release_res == FALSE)

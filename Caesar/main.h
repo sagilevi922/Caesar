@@ -30,7 +30,7 @@ void init_start_points(int* lines_per_thread, char* input_f_str, int file_size, 
 //and as struct that contain its arguments: paths of input and output files, a key for operation,
 //starting position of operation and the length of the section to operate.
 //It creates a new thread and return a HANDLE to it.
-static HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
+static HANDLE create_thread_simple(LPTHREAD_START_ROUTINE p_start_routine,
 	LPDWORD p_thread_id, thread_args* args);
 
 // gets paremters for thread and creates a thread argument struct pointer
